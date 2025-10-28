@@ -86,14 +86,30 @@ router.post('/model', upload.fields([
         let videoUrl = null;
 
         // Handle photo upload
+        // if (req.files && req.files.photo && req.files.photo[0]) {
+        //     const photoResult = await uploadFile(
+        //         req.files.photo[0].buffer,
+        //         req.files.photo[0].originalname,
+        //         req.files.photo[0].mimetype
+        //     );
+        //     if (photoResult.success) {
+        //         photoUrl = photoResult.url;
+        //     }
+        // }
+        // Handle photo upload
         if (req.files && req.files.photo && req.files.photo[0]) {
+            console.log('📸 Uploading photo:', req.files.photo[0].originalname);
             const photoResult = await uploadFile(
                 req.files.photo[0].buffer,
                 req.files.photo[0].originalname,
                 req.files.photo[0].mimetype
             );
+            console.log('📸 Photo upload result:', photoResult);
+
             if (photoResult.success) {
                 photoUrl = photoResult.url;
+            } else {
+                console.error('❌ Photo upload failed:', photoResult.error);
             }
         }
 

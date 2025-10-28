@@ -37,6 +37,37 @@ const initializeMinIO = () => {
     }
 };
 
+// const uploadFile = async (file, fileName, contentType) => {
+//     try {
+//         const objectName = `${Date.now()}-${fileName}`;
+//         const metaData = {
+//             'Content-Type': contentType,
+//         };
+
+//         const result = await minioClient.putObject(
+//             process.env.MINIO_BUCKET,
+//             objectName,
+//             file,
+//             metaData
+//         );
+
+//         return {
+//             success: true,
+//             url: `${process.env.MINIO_URL}/${process.env.MINIO_BUCKET}/${objectName}`,
+//             objectName
+//         };
+//     } catch (error) {
+//         console.error('Upload error:', error);
+//         return {
+//             success: false,
+//             error: error.message
+//         };
+//     }
+// };
+
+
+
+
 const uploadFile = async (file, fileName, contentType) => {
     try {
         const objectName = `${Date.now()}-${fileName}`;
@@ -51,9 +82,13 @@ const uploadFile = async (file, fileName, contentType) => {
             metaData
         );
 
+        const baseURL =
+            process.env.MINIO_URL ||
+            `${process.env.MINIO_ENDPOINT.replace(/\/$/, '')}:${process.env.MINIO_PORT}`;
+
         return {
             success: true,
-            url: `${process.env.MINIO_URL}/${process.env.MINIO_BUCKET}/${objectName}`,
+            url: `${baseURL}/${process.env.MINIO_BUCKET}/${objectName}`,
             objectName
         };
     } catch (error) {
@@ -64,6 +99,9 @@ const uploadFile = async (file, fileName, contentType) => {
         };
     }
 };
+
+
+
 
 const deleteFile = async (objectName) => {
     try {
