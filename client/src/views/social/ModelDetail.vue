@@ -1,0 +1,380 @@
+<template>
+  <div class="container py-4">
+    <div v-if="loading" class="text-center">
+      <div class="loading">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    </div>
+
+    <div v-else-if="error" class="alert alert-danger" role="alert">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      {{ error }}
+    </div>
+
+    <div v-else-if="model" class="row">
+      <!-- Model Info -->
+      <div class="col-lg-8">
+        <div class="card mb-4">
+          <div class="row g-0">
+            <div class="col-md-4">
+              <img
+                :src="model.photoUrl || 'https://via.placeholder.com/400x600'"
+                class="img-fluid rounded-start h-100"
+                :alt="`${model.name} ${model.surname}`"
+                style="object-fit: cover; min-height: 300px;"
+              />
+            </div>
+            <div class="col-md-8">
+              <div class="card-body">
+                <h1 class="card-title">
+                  {{ model.name }} {{ model.surname }}
+                </h1>
+                <div class="row mb-3">
+                  <div class="col-sm-6">
+                    <p class="card-text">
+                      <i class="fas fa-birthday-cake me-2 text-primary"></i>
+                      <strong>Age:</strong> {{ model.age }} years old
+                    </p>
+                  </div>
+                  <div class="col-sm-6">
+                    <p class="card-text">
+                      <i class="fas fa-palette me-2 text-primary"></i>
+                      <strong>Hair:</strong> {{ model.hairColor }}
+                    </p>
+                  </div>
+                  <div class="col-sm-6">
+                    <p class="card-text">
+                      <i class="fas fa-paint-brush me-2 text-primary"></i>
+                      <strong>Skin:</strong> {{ model.skinColor }}
+                    </p>
+                  </div>
+                </div>
+                <p class="card-text">
+                  <strong>About:</strong><br>
+                  {{ model.bio }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Video Preview -->
+        <div v-if="model.videoUrl" class="card mb-4">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="fas fa-video me-2"></i>
+              Video Preview
+            </h5>
+          </div>
+          <div class="card-body">
+            <div class="ratio ratio-16x9">
+              <video controls>
+                <source :src="model.videoUrl" type="video/mp4">
+                Your browser does not support the video tag.
+              </video>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subscription Plans -->
+      <div class="col-lg-4">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="fas fa-crown me-2"></i>
+              Subscription Plans
+            </h5>
+          </div>
+          <div class="card-body">
+            <div v-if="model.plans.length === 0" class="text-center text-muted">
+              <i class="fas fa-info-circle fa-2x mb-2"></i>
+              <p>No plans available yet</p>
+            </div>
+            
+            <div v-else>
+              <div
+                v-for="plan in model.plans"
+                :key="plan.id"
+                class="card mb-3 border-primary"
+                :class="{ 'border-success': plan.name.toLowerCase().includes('premium') || plan.name.toLowerCase().includes('vip') }"
+              >
+                <div class="card-body">
+                  <h6 class="card-title d-flex justify-content-between align-items-center">
+                    {{ plan.name }}
+                    <span class="badge bg-primary">
+                      ${{ plan.price }}
+                    </span>
+                  </h6>
+                  <p class="card-text small text-muted">
+                    {{ plan.description }}
+                  </p>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                      <i class="fas fa-clock me-1"></i>
+                      {{ plan.duration }} days
+                    </small>
+                    <button
+                      class="btn btn-primary btn-sm"
+                      @click="subscribe(plan)"
+                    >
+                      <i class="fas fa-credit-card me-1"></i>
+                      Subscribe
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Subscription Modal -->
+    <div
+      class="modal fade"
+      id="subscriptionModal"
+      tabindex="-1"
+      data-bs-backdrop="static"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="fas fa-credit-card me-2"></i>
+              Complete Subscription
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              @click="resetSubscription"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <div v-if="selectedPlan" class="mb-3">
+              <h6>{{ selectedPlan.name }}</h6>
+              <p class="text-muted">{{ selectedPlan.description }}</p>
+              <div class="d-flex justify-content-between">
+                <span>Price:</span>
+                <strong>${{ selectedPlan.price }}</strong>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span>Duration:</span>
+                <strong>{{ selectedPlan.duration }} days</strong>
+              </div>
+            </div>
+
+            <form @submit.prevent="processSubscription">
+              <div class="mb-3">
+                <label for="cardNumber" class="form-label">Card Number</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="cardNumber"
+                  v-model="paymentData.cardNumber"
+                  placeholder="1234 5678 9012 3456"
+                  required
+                />
+              </div>
+              
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="expiryDate" class="form-label">Expiry Date</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="expiryDate"
+                      v-model="paymentData.expiryDate"
+                      placeholder="MM/YY"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="cvv" class="form-label">CVV</label>
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="cvv"
+                      v-model="paymentData.cvv"
+                      placeholder="123"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                This is a demo payment. Any card details will be accepted.
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+              @click="resetSubscription"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              @click="processSubscription"
+              :disabled="processing"
+            >
+              <span v-if="processing" class="spinner-border spinner-border-sm me-2"></span>
+              <i v-else class="fas fa-credit-card me-2"></i>
+              {{ processing ? 'Processing...' : 'Complete Payment' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import api from '../../services/api'
+
+export default {
+  name: 'ModelDetail',
+  props: {
+    id: {
+      type: String,
+      required: true
+    }
+  },
+  data() {
+    return {
+      model: null,
+      loading: true,
+      error: null,
+      selectedPlan: null,
+      paymentData: {
+        cardNumber: '',
+        expiryDate: '',
+        cvv: ''
+      },
+      processing: false
+    }
+  },
+  async mounted() {
+    await this.fetchModel()
+  },
+  methods: {
+    async fetchModel() {
+      try {
+        this.loading = true
+        this.error = null
+        
+        const response = await api.get(`/social/models/${this.id}`)
+        this.model = response.data.model
+      } catch (error) {
+        console.error('Error fetching model:', error)
+        this.error = 'Failed to load model details. Please try again.'
+      } finally {
+        this.loading = false
+      }
+    },
+
+    subscribe(plan) {
+      this.selectedPlan = plan
+      this.resetPaymentData()
+      
+      // Show modal
+      const modal = new bootstrap.Modal(document.getElementById('subscriptionModal'))
+      modal.show()
+    },
+
+    resetPaymentData() {
+      this.paymentData = {
+        cardNumber: '',
+        expiryDate: '',
+        cvv: ''
+      }
+    },
+
+    resetSubscription() {
+      this.selectedPlan = null
+      this.resetPaymentData()
+    },
+
+    async processSubscription() {
+      if (!this.selectedPlan) return
+
+      this.processing = true
+
+      try {
+        // Check if user is authenticated
+        const token = localStorage.getItem('token')
+        if (!token) {
+          // Hide modal first
+          const modal = bootstrap.Modal.getInstance(document.getElementById('subscriptionModal'))
+          modal.hide()
+          
+          // Redirect to login
+          this.$swal({
+            icon: 'info',
+            title: 'Login Required',
+            text: 'Please log in to complete your subscription.',
+            confirmButtonText: 'Go to Login'
+          }).then(() => {
+            this.$router.push('/login')
+          })
+          return
+        }
+
+        // Process demo payment first
+        await api.post('/social/subscribe', {
+          modelId: this.model.id,
+          planId: this.selectedPlan.id,
+          paymentData: this.paymentData
+        })
+
+        // Create actual subscription
+        const subscriptionResponse = await api.post('/user/subscribe', {
+          modelId: this.model.id,
+          planId: this.selectedPlan.id
+        })
+
+        // Hide modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('subscriptionModal'))
+        modal.hide()
+
+        // Show success message
+        this.$swal({
+          icon: 'success',
+          title: 'Subscription Successful!',
+          text: 'Your subscription has been created. You can now access exclusive content and chat with this model.',
+          confirmButtonText: 'Great!'
+        }).then(() => {
+          // Redirect to user dashboard
+          this.$router.push('/user')
+        })
+
+        // Reset form
+        this.resetSubscription()
+
+      } catch (error) {
+        console.error('Subscription error:', error)
+        this.$swal({
+          icon: 'error',
+          title: 'Subscription Failed',
+          text: error.response?.data?.message || 'Something went wrong. Please try again.',
+          confirmButtonText: 'OK'
+        })
+      } finally {
+        this.processing = false
+      }
+    }
+  }
+}
+</script>

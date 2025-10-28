@@ -1,0 +1,154 @@
+// This is your Prisma schema file
+// Learn more: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String        @id @default(cuid())
+  email       String        @unique
+  password    String
+  role        String        @default("USER") // USER, MANAGER, ADMIN
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  // Relations
+  subscriptions Subscription[]
+  messages      Message[]
+  blockedBy     BlockedUser[] @relation("BlockedBy")
+  blockedUsers  BlockedUser[] @relation("BlockedUsers")
+  manager       Manager?
+  chats         Chat[]
+
+  @@map("users")
+}
+
+model Manager {
+  id          String      @id @default(cuid())
+  userId      String      @unique
+  isApproved  Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  model       Model?
+
+  @@map("managers")
+}
+
+model Model {
+  id          String       @id @default(cuid())
+  managerId   String       @unique
+  name        String
+  surname     String
+  bio         String
+  age         Int
+  hairColor   String
+  skinColor   String
+  photoUrl    String?
+  videoUrl    String?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  // Relations
+  manager       Manager       @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  plans         Plan[]
+  subscriptions Subscription[]
+  messages      Message[]
+  chats         Chat[]
+
+  @@map("models")
+}
+
+model Plan {
+  id          String   @id @default(cuid())
+  modelId     String
+  name        String
+  description String
+  price       Float
+  duration    Int      // in days
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  model         Model          @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+model Subscription {
+  id        String   @id @default(cuid())
+  userId    String
+  modelId   String
+  planId    String
+  isActive  Boolean  @default(true)
+  startDate DateTime @default(now())
+  endDate   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  model Model @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  plan  Plan  @relation(fields: [planId], references: [id])
+
+  @@unique([userId, modelId])
+  @@map("subscriptions")
+}
+
+model Chat {
+  id         String     @id @default(cuid())
+  createdAt  DateTime   @default(now())
+
+  // Relations
+  userId     String
+  modelId    String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  model      Model      @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  messages   Message[]
+
+  @@unique([userId, modelId])
+  @@map("chats")
+}
+
+model Message {
+  id          String    @id @default(cuid())
+  userId      String
+  modelId     String
+  chatId      String
+  content     String
+  isFromUser  Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  model  Model  @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  chat   Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+model BlockedUser {
+  id             String   @id @default(cuid())
+  blockedById    String
+  blockedUserId  String
+  createdAt      DateTime @default(now())
+
+  // Relations
+  blockedBy    User @relation("BlockedBy", fields: [blockedById], references: [id], onDelete: Cascade)
+  blockedUser  User @relation("BlockedUsers", fields: [blockedUserId], references: [id], onDelete: Cascade)
+
+  @@unique([blockedById, blockedUserId])
+  @@map("blocked_users")
+}
