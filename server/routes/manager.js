@@ -11,10 +11,26 @@ router.use(authenticateToken);
 router.use(requireManager);
 
 // Configure multer for file uploads
+// const upload = multer({
+//     storage: multer.memoryStorage(),
+//     limits: {
+//         fileSize: 10 * 1024 * 1024 // 10MB limit
+//     },
+//     fileFilter: (req, file, cb) => {
+//         if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+//             cb(null, true);
+//         } else {
+//             cb(new Error('Only image and video files are allowed'), false);
+//         }
+//     }
+// });
+
+
+
 const upload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB limit
+        fileSize: 200 * 1024 * 1024 // ✅ 200 MB limit
     },
     fileFilter: (req, file, cb) => {
         if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
@@ -24,6 +40,25 @@ const upload = multer({
         }
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Get manager's model
 router.get('/model', async (req, res) => {
@@ -54,21 +89,276 @@ router.get('/model', async (req, res) => {
 });
 
 // Create or update model
+// router.post('/model', upload.fields([
+//     { name: 'photo', maxCount: 1 },
+//     { name: 'video', maxCount: 1 }
+// ]), async (req, res) => {
+//     try {
+//         const {
+//             name,
+//             surname,
+//             bio,
+//             age,
+//             hairColor,
+//             skinColor
+//         } = req.body;
+
+//         // Validate required fields
+//         if (!name || !surname || !bio || !age || !hairColor || !skinColor) {
+//             return res.status(400).json({ message: 'All fields are required' });
+//         }
+
+//         const manager = await prisma.manager.findUnique({
+//             where: { userId: req.user.id },
+//             include: { model: true }
+//         });
+
+//         if (!manager) {
+//             return res.status(404).json({ message: 'Manager not found' });
+//         }
+
+//         let photoUrl = null;
+//         let videoUrl = null;
+
+//         // Handle photo upload
+//         // if (req.files && req.files.photo && req.files.photo[0]) {
+//         //     const photoResult = await uploadFile(
+//         //         req.files.photo[0].buffer,
+//         //         req.files.photo[0].originalname,
+//         //         req.files.photo[0].mimetype
+//         //     );
+//         //     if (photoResult.success) {
+//         //         photoUrl = photoResult.url;
+//         //     }
+//         // }
+//         // Handle photo upload
+//         if (req.files && req.files.photo && req.files.photo[0]) {
+//             console.log('📸 Uploading photo:', req.files.photo[0].originalname);
+//             const photoResult = await uploadFile(
+//                 req.files.photo[0].buffer,
+//                 req.files.photo[0].originalname,
+//                 req.files.photo[0].mimetype
+//             );
+//             console.log('📸 Photo upload result:', photoResult);
+
+//             if (photoResult.success) {
+//                 photoUrl = photoResult.url;
+//             } else {
+//                 console.error('❌ Photo upload failed:', photoResult.error);
+//             }
+//         }
+
+//         // Handle video upload
+//         if (req.files && req.files.video && req.files.video[0]) {
+//             const videoResult = await uploadFile(
+//                 req.files.video[0].buffer,
+//                 req.files.video[0].originalname,
+//                 req.files.video[0].mimetype
+//             );
+//             if (videoResult.success) {
+//                 videoUrl = videoResult.url;
+//             }
+//         }
+
+//         // Create or update model
+//         let model;
+//         if (manager.model) {
+//             // Update existing model
+//             model = await prisma.model.update({
+//                 where: { id: manager.model.id },
+//                 data: {
+//                     name,
+//                     surname,
+//                     bio,
+//                     age: parseInt(age),
+//                     hairColor,
+//                     skinColor,
+//                     photoUrl: photoUrl || manager.model.photoUrl,
+//                     videoUrl: videoUrl || manager.model.videoUrl
+//                 },
+//                 include: {
+//                     plans: {
+//                         where: { isActive: true },
+//                         orderBy: { createdAt: 'asc' }
+//                     }
+//                 }
+//             });
+//         } else {
+//             // Create new model
+//             model = await prisma.model.create({
+//                 data: {
+//                     managerId: manager.id,
+//                     name,
+//                     surname,
+//                     bio,
+//                     age: parseInt(age),
+//                     hairColor,
+//                     skinColor,
+//                     photoUrl,
+//                     videoUrl
+//                 },
+//                 include: {
+//                     plans: {
+//                         where: { isActive: true },
+//                         orderBy: { createdAt: 'asc' }
+//                     }
+//                 }
+//             });
+//         }
+
+//         res.json({
+//             message: 'Model saved successfully',
+//             model
+//         });
+
+//     } catch (error) {
+//         console.error('Save model error:', error);
+//         res.status(500).json({ message: 'Failed to save model' });
+//     }
+// });
+
+
+
+
+// router.post('/model', upload.fields([
+//     { name: 'photo', maxCount: 1 },
+//     { name: 'video', maxCount: 1 }
+// ]), async (req, res) => {
+//     try {
+//         // 🧩 Step 1 — Log everything incoming
+//         console.log('🔥 Incoming form data:', req.body);
+//         console.log('📂 Incoming files:', req.files);
+
+//         const {
+//             name,
+//             surname,
+//             bio,
+//             age,
+//             hairColor,
+//             skinColor
+//         } = req.body;
+
+//         // ✅ Validate required fields
+//         if (!name || !surname || !bio || !age || !hairColor || !skinColor) {
+//             return res.status(400).json({ message: 'All fields are required' });
+//         }
+
+//         const manager = await prisma.manager.findUnique({
+//             where: { userId: req.user.id },
+//             include: { model: true }
+//         });
+
+//         if (!manager) {
+//             return res.status(404).json({ message: 'Manager not found' });
+//         }
+
+//         let photoUrl = null;
+//         let videoUrl = null;
+
+//         // 📸 Handle photo upload
+//         if (req.files && req.files.photo && req.files.photo[0]) {
+//             console.log('📸 Uploading photo:', req.files.photo[0].originalname);
+//             const photoResult = await uploadFile(
+//                 req.files.photo[0].buffer,
+//                 req.files.photo[0].originalname,
+//                 req.files.photo[0].mimetype
+//             );
+//             console.log('📸 Photo upload result:', photoResult);
+
+//             if (photoResult.success) {
+//                 photoUrl = photoResult.url;
+//             } else {
+//                 console.error('❌ Photo upload failed:', photoResult.error);
+//             }
+//         }
+
+//         // 🎥 Handle video upload
+//         if (req.files && req.files.video && req.files.video[0]) {
+//             console.log('🎥 Uploading video:', req.files.video[0].originalname);
+//             const videoResult = await uploadFile(
+//                 req.files.video[0].buffer,
+//                 req.files.video[0].originalname,
+//                 req.files.video[0].mimetype
+//             );
+//             console.log('🎥 Video upload result:', videoResult);
+
+//             if (videoResult.success) {
+//                 videoUrl = videoResult.url;
+//             } else {
+//                 console.error('❌ Video upload failed:', videoResult.error);
+//             }
+//         }
+
+//         // 🧠 Log before saving to DB
+//         console.log('✅ Ready to save model with photoUrl:', photoUrl, 'and videoUrl:', videoUrl);
+
+//         // 💾 Create or update model
+//         let model;
+//         if (manager.model) {
+//             model = await prisma.model.update({
+//                 where: { id: manager.model.id },
+//                 data: {
+//                     name,
+//                     surname,
+//                     bio,
+//                     age: parseInt(age),
+//                     hairColor,
+//                     skinColor,
+//                     photoUrl: photoUrl || manager.model.photoUrl,
+//                     videoUrl: videoUrl || manager.model.videoUrl
+//                 },
+//                 include: {
+//                     plans: {
+//                         where: { isActive: true },
+//                         orderBy: { createdAt: 'asc' }
+//                     }
+//                 }
+//             });
+//         } else {
+//             model = await prisma.model.create({
+//                 data: {
+//                     managerId: manager.id,
+//                     name,
+//                     surname,
+//                     bio,
+//                     age: parseInt(age),
+//                     hairColor,
+//                     skinColor,
+//                     photoUrl,
+//                     videoUrl
+//                 },
+//                 include: {
+//                     plans: {
+//                         where: { isActive: true },
+//                         orderBy: { createdAt: 'asc' }
+//                     }
+//                 }
+//             });
+//         }
+
+//         // ✅ Success response
+//         res.json({
+//             message: 'Model saved successfully',
+//             model
+//         });
+
+//     } catch (error) {
+//         console.error('💥 Save model error (full):', error);
+//         res.status(500).json({ message: 'Failed to save model', error: error.message });
+//     }
+// });
+
+
 router.post('/model', upload.fields([
     { name: 'photo', maxCount: 1 },
     { name: 'video', maxCount: 1 }
 ]), async (req, res) => {
     try {
-        const {
-            name,
-            surname,
-            bio,
-            age,
-            hairColor,
-            skinColor
-        } = req.body;
+        console.log('🔥 Incoming form data:', req.body);
+        console.log('📂 Incoming files:', req.files);
 
-        // Validate required fields
+        const { name, surname, bio, age, hairColor, skinColor } = req.body;
+
         if (!name || !surname || !bio || !age || !hairColor || !skinColor) {
             return res.status(400).json({ message: 'All fields are required' });
         }
@@ -85,62 +375,66 @@ router.post('/model', upload.fields([
         let photoUrl = null;
         let videoUrl = null;
 
-        // Handle photo upload
-        // if (req.files && req.files.photo && req.files.photo[0]) {
-        //     const photoResult = await uploadFile(
-        //         req.files.photo[0].buffer,
-        //         req.files.photo[0].originalname,
-        //         req.files.photo[0].mimetype
-        //     );
-        //     if (photoResult.success) {
-        //         photoUrl = photoResult.url;
-        //     }
-        // }
-        // Handle photo upload
-        if (req.files && req.files.photo && req.files.photo[0]) {
+        // 📸 Handle photo
+        if (req.files?.photo?.[0]) {
             console.log('📸 Uploading photo:', req.files.photo[0].originalname);
-            const photoResult = await uploadFile(
+            const result = await uploadFile(
                 req.files.photo[0].buffer,
                 req.files.photo[0].originalname,
                 req.files.photo[0].mimetype
             );
-            console.log('📸 Photo upload result:', photoResult);
-
-            if (photoResult.success) {
-                photoUrl = photoResult.url;
-            } else {
-                console.error('❌ Photo upload failed:', photoResult.error);
-            }
+            if (result.success) photoUrl = result.url;
+            console.log('✅ Photo uploaded:', photoUrl);
         }
 
-        // Handle video upload
-        if (req.files && req.files.video && req.files.video[0]) {
-            const videoResult = await uploadFile(
+        // 🎥 Handle video
+        if (req.files?.video?.[0]) {
+            console.log('🎥 Uploading video:', req.files.video[0].originalname);
+            const result = await uploadFile(
                 req.files.video[0].buffer,
                 req.files.video[0].originalname,
                 req.files.video[0].mimetype
             );
-            if (videoResult.success) {
-                videoUrl = videoResult.url;
-            }
+            if (result.success) videoUrl = result.url;
+            console.log('✅ Video uploaded:', videoUrl);
         }
 
-        // Create or update model
+        console.log('✅ Ready to save model with photoUrl:', photoUrl, 'and videoUrl:', videoUrl);
+
         let model;
-        if (manager.model) {
-            // Update existing model
+
+        // 🧩 Use safe fallback logic - preserve existing URLs when only one file is uploaded
+        if (manager.model && manager.model.id) {
+            console.log('🧩 Updating existing model ID:', manager.model.id);
+
+            const updateData = {
+                name,
+                surname,
+                bio,
+                age: parseInt(age),
+                hairColor,
+                skinColor
+            };
+
+            // Only update photoUrl if a new photo was uploaded
+            if (photoUrl) {
+                updateData.photoUrl = photoUrl;
+            } else {
+                // Preserve existing photoUrl
+                updateData.photoUrl = manager.model.photoUrl;
+            }
+
+            // Only update videoUrl if a new video was uploaded
+            if (videoUrl) {
+                updateData.videoUrl = videoUrl;
+            } else {
+                // Preserve existing videoUrl
+                updateData.videoUrl = manager.model.videoUrl;
+            }
+
             model = await prisma.model.update({
                 where: { id: manager.model.id },
-                data: {
-                    name,
-                    surname,
-                    bio,
-                    age: parseInt(age),
-                    hairColor,
-                    skinColor,
-                    photoUrl: photoUrl || manager.model.photoUrl,
-                    videoUrl: videoUrl || manager.model.videoUrl
-                },
+                data: updateData,
                 include: {
                     plans: {
                         where: { isActive: true },
@@ -148,8 +442,11 @@ router.post('/model', upload.fields([
                     }
                 }
             });
+
+            console.log('✅ Model updated successfully:', model.id, 'videoUrl:', model.videoUrl);
         } else {
-            // Create new model
+            console.log('🆕 Creating new model for manager ID:', manager.id);
+
             model = await prisma.model.create({
                 data: {
                     managerId: manager.id,
@@ -169,18 +466,44 @@ router.post('/model', upload.fields([
                     }
                 }
             });
+
+            console.log('✅ New model created successfully:', model.id);
         }
 
-        res.json({
+        // Ensure model response includes all fields
+        console.log('📤 Sending response with model:', {
+            id: model.id,
+            photoUrl: model.photoUrl,
+            videoUrl: model.videoUrl
+        });
+
+        return res.status(200).json({
             message: 'Model saved successfully',
-            model
+            model: {
+                ...model,
+                photoUrl: model.photoUrl || null,
+                videoUrl: model.videoUrl || null
+            }
         });
 
     } catch (error) {
-        console.error('Save model error:', error);
-        res.status(500).json({ message: 'Failed to save model' });
+        console.error('💥 Save model error (full):', error);
+
+        if (error.code) console.error('⚙️ Prisma error code:', error.code);
+        if (error.meta) console.error('📦 Prisma error meta:', error.meta);
+        if (error.message) console.error('🧾 Error message:', error.message);
+
+        res.status(500).json({
+            message: 'Failed to save model',
+            error: error.message || 'Unknown error'
+        });
     }
 });
+
+
+
+
+
 
 // Create plan
 router.post('/plans', async (req, res) => {
@@ -584,10 +907,35 @@ router.post('/messages', async (req, res) => {
         if (io) io.to(`chat_${chat.id}`).emit('new_message', message);
 
         res.json({ message });
+        //     } catch (error) {
+        //         console.error('Send message error:', error);
+        //         res.status(500).json({ message: 'Failed to send message' });
+        //     }
+        // });
+        // } catch (error) {
+        //     console.error('💥 Save model error (full):', error);
+
+        //     if (error.code) console.error('⚙️ Prisma error code:', error.code);
+        //     if (error.meta) console.error('📦 Prisma error meta:', error.meta);
+        //     if (error.message) console.error('🧾 Error message:', error.message);
+
+        //     res.status(500).json({
+        //         message: 'Failed to save model',
+        //         error: error.message || 'Unknown error'
+        //     });
+        // }
     } catch (error) {
-        console.error('Send message error:', error);
-        res.status(500).json({ message: 'Failed to send message' });
-    }
+        console.error('💥 Send message error (full):', error);
+
+        if (error.code) console.error('⚙️ Prisma error code:', error.code);
+        if (error.meta) console.error('📦 Prisma error meta:', error.meta);
+        if (error.message) console.error('🧾 Error message:', error.message);
+
+        res.status(500).json({
+            message: 'Failed to send message',
+            error: error.message || 'Unknown error'
+        });
+    };
 });
 
 

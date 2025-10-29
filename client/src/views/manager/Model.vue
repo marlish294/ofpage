@@ -146,6 +146,26 @@
                 </div>
               </div>
 
+              <div v-if="modelForm.videoUrl" class="mb-3">
+                <label class="form-label">Current Video</label>
+                <div>
+                  <video
+                    :src="modelForm.videoUrl"
+                    controls
+                    preload="metadata"
+                    crossorigin="anonymous"
+                    style="max-width: 300px; max-height: 300px; border-radius: 10px;"
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              </div>
+
+
+
+
+
+
               <div class="d-flex justify-content-between">
                 <button type="button" class="btn btn-secondary" @click="resetForm">
                   <i class="fas fa-undo me-1"></i>
@@ -334,7 +354,7 @@
   </div>
 </template>
 
-<script>
+<!-- <script>
 import api from '../../services/api'
 
 export default {
@@ -425,6 +445,7 @@ export default {
             'Content-Type': 'multipart/form-data'
           }
         })
+        console.log('✅ Model save response:', response.data)
 
         this.$swal({
           icon: 'success',
@@ -484,13 +505,58 @@ export default {
       }
     },
 
+    // handleVideoUpload(event) {
+    //   const file = event.target.files[0]
+    //   if (file) {
+    //     // In a real app, you'd upload the file here
+    //     console.log('Video file selected:', file.name)
+    //   }
+    // },
+
     handleVideoUpload(event) {
-      const file = event.target.files[0]
-      if (file) {
-        // In a real app, you'd upload the file here
-        console.log('Video file selected:', file.name)
-      }
-    },
+  const file = event.target.files[0]
+  if (file) {
+    // Validate file type
+    if (!file.type.startsWith('video/')) {
+      this.$swal({
+        icon: 'error',
+        title: 'Invalid File',
+        text: 'Please select a valid video file.',
+        confirmButtonText: 'OK'
+      })
+      return
+    }
+
+    // Validate file size (100MB max for videos)
+    if (file.size > 100 * 1024 * 1024) {
+      this.$swal({
+        icon: 'error',
+        title: 'File Too Large',
+        text: 'Please select a video smaller than 100MB.',
+        confirmButtonText: 'OK'
+      })
+      return
+    }
+
+    console.log('🎥 Video file selected:', file.name)
+    this.selectedVideoFile = file
+  }
+},
+
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     resetForm() {
       this.loadModel()
@@ -574,6 +640,389 @@ export default {
         try {
           await api.delete(`/manager/plans/${planId}`)
           
+          this.$swal({
+            icon: 'success',
+            title: 'Plan Deleted!',
+            text: 'The subscription plan has been deleted successfully.',
+            confirmButtonText: 'OK'
+          })
+
+          await this.loadPlans()
+        } catch (error) {
+          console.error('Error deleting plan:', error)
+          this.$swal({
+            icon: 'error',
+            title: 'Delete Failed',
+            text: 'Failed to delete plan. Please try again.',
+            confirmButtonText: 'OK'
+          })
+        }
+      }
+    }
+  }
+}
+</script> -->
+
+
+
+
+
+
+
+<script>
+import api from '../../services/api'
+
+export default {
+  name: 'ManagerModel',
+  data() {
+    return {
+      modelForm: {
+        name: '',
+        surname: '',
+        bio: '',
+        age: '',
+        hairColor: '',
+        skinColor: '',
+        photoUrl: null,
+        videoUrl: null
+      },
+      plans: [],
+      saving: false,
+      editingPlan: null,
+      planForm: {
+        name: '',
+        description: '',
+        price: '',
+        duration: ''
+      },
+      savingPlan: false,
+      selectedPhotoFile: null,
+      selectedVideoFile: null
+    }
+  },
+  async mounted() {
+    await this.loadModel()
+    await this.loadPlans()
+  },
+  methods: {
+    async loadModel() {
+      try {
+        const response = await api.get('/manager/model')
+        if (response.data.model) {
+          const model = response.data.model
+          this.modelForm = {
+            name: model.name || '',
+            surname: model.surname || '',
+            bio: model.bio || '',
+            age: model.age || '',
+            hairColor: model.hairColor || '',
+            skinColor: model.skinColor || '',
+            photoUrl: model.photoUrl || null,
+            videoUrl: model.videoUrl || null
+          }
+        }
+      } catch (error) {
+        console.error('Error loading model:', error)
+      }
+    },
+
+    async loadPlans() {
+      try {
+        const response = await api.get('/manager/model')
+        this.plans = response.data.model?.plans || []
+      } catch (error) {
+        console.error('Error loading plans:', error)
+      }
+    },
+
+    // async saveModel() {
+    //   try {
+    //     this.saving = true
+
+    //     const formData = new FormData()
+    //     formData.append('name', this.modelForm.name)
+    //     formData.append('surname', this.modelForm.surname)
+    //     formData.append('bio', this.modelForm.bio)
+    //     formData.append('age', this.modelForm.age)
+    //     formData.append('hairColor', this.modelForm.hairColor)
+    //     formData.append('skinColor', this.modelForm.skinColor)
+
+    //     if (this.selectedPhotoFile) {
+    //       formData.append('photo', this.selectedPhotoFile)
+    //     }
+
+    //     if (this.selectedVideoFile) {
+    //       formData.append('video', this.selectedVideoFile)
+    //     }
+
+    //     const response = await api.post('/manager/model', formData, {
+    //       headers: {
+    //         'Content-Type': 'multipart/form-data'
+    //       }
+    //     })
+
+    //     console.log('✅ Model save response:', response.data)
+
+    //     this.$swal({
+    //       icon: 'success',
+    //       title: 'Model Saved!',
+    //       text: 'Your model profile has been updated successfully.',
+    //       confirmButtonText: 'Great!'
+    //     })
+
+    //     // ✅ Prevent “Failed to save” popup by exiting here
+    //     this.selectedPhotoFile = null
+    //     this.selectedVideoFile = null
+
+    //     await this.loadModel()
+    //     return
+    //   } catch (error) {
+    //     console.error('Error saving model:', error)
+    //     this.$swal({
+    //       icon: 'error',
+    //       title: 'Save Failed',
+    //       text: error.response?.data?.message || 'Failed to save model. Please try again.',
+    //       confirmButtonText: 'OK'
+    //     })
+    //   } finally {
+    //     this.saving = false
+    //   }
+    // },
+
+
+
+    async saveModel() {
+      this.saving = true
+      
+      // Store old blob URLs for cleanup
+      const oldPhotoBlobUrl = this.selectedPhotoFile && this.modelForm.photoUrl?.startsWith('blob:') 
+        ? this.modelForm.photoUrl 
+        : null
+      const oldVideoBlobUrl = this.selectedVideoFile && this.modelForm.videoUrl?.startsWith('blob:') 
+        ? this.modelForm.videoUrl 
+        : null
+      
+      try {
+        const formData = new FormData()
+        formData.append('name', this.modelForm.name)
+        formData.append('surname', this.modelForm.surname)
+        formData.append('bio', this.modelForm.bio)
+        formData.append('age', this.modelForm.age)
+        formData.append('hairColor', this.modelForm.hairColor)
+        formData.append('skinColor', this.modelForm.skinColor)
+
+        if (this.selectedPhotoFile) {
+          formData.append('photo', this.selectedPhotoFile)
+        }
+        if (this.selectedVideoFile) {
+          formData.append('video', this.selectedVideoFile)
+        }
+
+        const response = await api.post('/manager/model', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        })
+
+        console.log('✅ Model save response:', response.data)
+        
+        if (response.status === 200 && response.data.model) {
+          const savedModel = response.data.model
+          
+          // Clean up old blob URLs to prevent memory leaks
+          if (oldPhotoBlobUrl) {
+            URL.revokeObjectURL(oldPhotoBlobUrl)
+          }
+          if (oldVideoBlobUrl) {
+            URL.revokeObjectURL(oldVideoBlobUrl)
+          }
+          
+          // ✅ Instantly update UI with saved URLs from MinIO
+          if (savedModel.photoUrl) {
+            this.modelForm.photoUrl = savedModel.photoUrl
+          }
+          if (savedModel.videoUrl) {
+            this.modelForm.videoUrl = savedModel.videoUrl
+          }
+
+          this.$swal({
+            icon: 'success',
+            title: 'Model Saved!',
+            text: 'Your model profile has been updated successfully.',
+            confirmButtonText: 'Great!'
+          })
+
+          // Clear selected files
+          this.selectedPhotoFile = null
+          this.selectedVideoFile = null
+          
+          // Reset file inputs
+          const photoInput = document.getElementById('photo')
+          const videoInput = document.getElementById('video')
+          if (photoInput) photoInput.value = ''
+          if (videoInput) videoInput.value = ''
+          
+          // Reload from server to ensure we have latest data
+          await this.loadModel()
+        } else {
+          throw new Error('Unexpected response format')
+        }
+      } catch (error) {
+        console.error('❌ Save model error (frontend):', error)
+        this.$swal({
+          icon: 'error',
+          title: 'Save Failed',
+          text: error.response?.data?.message || error.message || 'Failed to save model. Please try again.',
+          confirmButtonText: 'OK'
+        })
+      } finally {
+        this.saving = false
+      }
+    },
+
+
+    handlePhotoUpload(event) {
+      const file = event.target.files[0]
+      if (file) {
+        if (!file.type.startsWith('image/')) {
+          this.$swal({
+            icon: 'error',
+            title: 'Invalid File',
+            text: 'Please select an image file.',
+            confirmButtonText: 'OK'
+          })
+          return
+        }
+
+        if (file.size > 10 * 1024 * 1024) {
+          this.$swal({
+            icon: 'error',
+            title: 'File Too Large',
+            text: 'Please select an image smaller than 10MB.',
+            confirmButtonText: 'OK'
+          })
+          return
+        }
+
+        this.modelForm.photoUrl = URL.createObjectURL(file)
+        this.selectedPhotoFile = file
+      }
+    },
+
+    handleVideoUpload(event) {
+      const file = event.target.files[0]
+      if (file) {
+        if (!file.type.startsWith('video/')) {
+          this.$swal({
+            icon: 'error',
+            title: 'Invalid File',
+            text: 'Please select a valid video file.',
+            confirmButtonText: 'OK'
+          })
+          return
+        }
+
+        if (file.size > 200 * 1024 * 1024) {
+          this.$swal({
+            icon: 'error',
+            title: 'File Too Large',
+            text: 'Please select a video smaller than 200MB.',
+            confirmButtonText: 'OK'
+          })
+          return
+        }
+
+        console.log('🎥 Video file selected:', file.name)
+        // Show preview with blob URL - will be replaced with MinIO URL after save
+        const previewUrl = URL.createObjectURL(file)
+        this.modelForm.videoUrl = previewUrl
+        this.selectedVideoFile = file
+      } else {
+        // Reset video input
+        this.selectedVideoFile = null
+      }
+    },
+
+    resetForm() {
+      this.loadModel()
+    },
+
+    showAddPlanModal() {
+      this.editingPlan = null
+      this.resetPlanForm()
+      const modal = new bootstrap.Modal(document.getElementById('planModal'))
+      modal.show()
+    },
+
+    editPlan(plan) {
+      this.editingPlan = plan
+      this.planForm = {
+        name: plan.name,
+        description: plan.description,
+        price: plan.price,
+        duration: plan.duration
+      }
+      const modal = new bootstrap.Modal(document.getElementById('planModal'))
+      modal.show()
+    },
+
+    resetPlanForm() {
+      this.planForm = {
+        name: '',
+        description: '',
+        price: '',
+        duration: ''
+      }
+      this.editingPlan = null
+    },
+
+    async savePlan() {
+      try {
+        this.savingPlan = true
+
+        if (this.editingPlan) {
+          await api.put(`/manager/plans/${this.editingPlan.id}`, this.planForm)
+        } else {
+          await api.post('/manager/plans', this.planForm)
+        }
+
+        this.$swal({
+          icon: 'success',
+          title: 'Plan Saved!',
+          text: 'Your subscription plan has been saved successfully.',
+          confirmButtonText: 'Great!'
+        })
+
+        const modal = bootstrap.Modal.getInstance(document.getElementById('planModal'))
+        modal.hide()
+
+        await this.loadPlans()
+        this.resetPlanForm()
+      } catch (error) {
+        console.error('Error saving plan:', error)
+        this.$swal({
+          icon: 'error',
+          title: 'Save Failed',
+          text: error.response?.data?.message || 'Failed to save plan. Please try again.',
+          confirmButtonText: 'OK'
+        })
+      } finally {
+        this.savingPlan = false
+      }
+    },
+
+    async deletePlan(planId) {
+      const result = await this.$swal({
+        icon: 'warning',
+        title: 'Delete Plan',
+        text: 'Are you sure you want to delete this plan? This action cannot be undone.',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete it!',
+        cancelButtonText: 'Cancel'
+      })
+
+      if (result.isConfirmed) {
+        try {
+          await api.delete(`/manager/plans/${planId}`)
+
           this.$swal({
             icon: 'success',
             title: 'Plan Deleted!',
