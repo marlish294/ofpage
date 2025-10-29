@@ -170,6 +170,16 @@ export default {
       <div class="col-md-6 col-lg-4">
         <div class="card shadow">
           <div class="card-body p-5">
+            <div class="text-end mb-3">
+              <button
+                class="btn btn-outline-secondary btn-sm"
+                @click="goHome"
+                title="Go to Home"
+              >
+                <i class="fas fa-home me-1"></i>
+                Home
+              </button>
+            </div>
             <div class="text-center mb-4">
               <i class="fas fa-star fa-3x text-primary mb-3"></i>
               <h2 class="fw-bold">Welcome Back</h2>
@@ -359,6 +369,10 @@ export default {
   },
   methods: {
     ...mapActions('auth', ['login', 'clearError']),
+
+    goHome() {
+      window.location.href = 'http://localhost:8080'
+    },
 
     async handleLogin() {
       console.log('🟢 [Login.vue] handleLogin fired with:', this.form)
