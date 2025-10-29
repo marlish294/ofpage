@@ -468,4 +468,150 @@ router.get('/messages', async (req, res) => {
     }
 });
 
+// Get all chat conversations (for sidebar) - organized by models
+router.get('/chat-conversations', async (req, res) => {
+    try {
+        const { filterModelId, filterUserId } = req.query;
+
+        // Get all unique chat conversations
+        const whereClause = {};
+        if (filterModelId) {
+            whereClause.modelId = filterModelId;
+        }
+        if (filterUserId) {
+            whereClause.userId = filterUserId;
+        }
+
+        const chats = await prisma.chat.findMany({
+            where: whereClause,
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                        role: true
+                    }
+                },
+                model: {
+                    select: {
+                        id: true,
+                        name: true,
+                        surname: true
+                    }
+                },
+                messages: {
+                    orderBy: { createdAt: 'desc' },
+                    take: 1,
+                    select: {
+                        content: true,
+                        createdAt: true,
+                        isFromUser: true
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        // Organize chats by model
+        const modelsMap = new Map();
+
+        chats.forEach(chat => {
+            const modelId = chat.modelId;
+            if (!modelsMap.has(modelId)) {
+                modelsMap.set(modelId, {
+                    id: chat.model.id,
+                    name: chat.model.name,
+                    surname: chat.model.surname,
+                    users: []
+                });
+            }
+
+            const model = modelsMap.get(modelId);
+            const userChat = {
+                userId: chat.userId,
+                user: chat.user,
+                lastMessage: chat.messages[0] || null,
+                chatId: chat.id
+            };
+
+            // Check if user already exists for this model (shouldn't happen, but just in case)
+            const existingUserIndex = model.users.findIndex(u => u.userId === chat.userId);
+            if (existingUserIndex === -1) {
+                model.users.push(userChat);
+            }
+        });
+
+        // Convert map to array and sort
+        const models = Array.from(modelsMap.values()).sort((a, b) => {
+            const nameA = `${a.name} ${a.surname}`.toLowerCase();
+            const nameB = `${b.name} ${b.surname}`.toLowerCase();
+            return nameA.localeCompare(nameB);
+        });
+
+        res.json({ models, chats });
+
+    } catch (error) {
+        console.error('Get chat conversations error:', error);
+        res.status(500).json({ message: 'Failed to fetch chat conversations' });
+    }
+});
+
+// Get all users and managers for filter
+router.get('/users-and-managers', async (req, res) => {
+    try {
+        const users = await prisma.user.findMany({
+            where: {
+                role: {
+                    in: ['USER', 'MANAGER']
+                }
+            },
+            select: {
+                id: true,
+                email: true,
+                role: true
+            },
+            orderBy: { email: 'asc' }
+        });
+
+        res.json({ users });
+
+    } catch (error) {
+        console.error('Get users and managers error:', error);
+        res.status(500).json({ message: 'Failed to fetch users and managers' });
+    }
+});
+
+// Get messages for a specific chat
+router.get('/chat-messages', async (req, res) => {
+    try {
+        const { userId, modelId } = req.query;
+
+        if (!userId || !modelId) {
+            return res.status(400).json({ message: 'userId and modelId are required' });
+        }
+
+        const messages = await prisma.message.findMany({
+            where: {
+                userId,
+                modelId
+            },
+            include: {
+                user: {
+                    select: { id: true, email: true }
+                },
+                model: {
+                    select: { id: true, name: true, surname: true }
+                }
+            },
+            orderBy: { createdAt: 'asc' }
+        });
+
+        res.json({ messages });
+
+    } catch (error) {
+        console.error('Get chat messages error:', error);
+        res.status(500).json({ message: 'Failed to fetch messages' });
+    }
+});
+
 module.exports = router;

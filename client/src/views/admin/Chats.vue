@@ -1,156 +1,249 @@
 <template>
   <div class="container-fluid py-4">
-    <div class="row mb-4">
+    <div class="row mb-3">
       <div class="col-12">
         <h2>
           <i class="fas fa-comments me-2"></i>
           Chat Monitoring
         </h2>
-        <p class="text-muted">Monitor all conversations (read-only)</p>
+        <p class="text-muted">Monitor all conversations (view-only)</p>
       </div>
     </div>
 
-    <!-- Filters -->
-    <div class="row mb-4">
-      <div class="col-md-6">
+    <!-- Filter Section -->
+    <div class="row mb-3">
+      <div class="col-md-4">
         <div class="card">
           <div class="card-body">
-            <h6 class="card-title">Filter by Model</h6>
-            <select class="form-select" v-model="selectedModelId" @change="filterByModel">
+            <label class="form-label fw-bold">
+              <i class="fas fa-filter me-1"></i>
+              Filter by User/Manager
+            </label>
+            <select 
+              class="form-select" 
+              v-model="filterUserId" 
+              @change="applyFilter"
+            >
+              <option value="">All Users/Managers</option>
+              <option v-for="user in usersAndManagers" :key="user.id" :value="user.id">
+                {{ user.email }} ({{ user.role }})
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-body">
+            <label class="form-label fw-bold">
+              <i class="fas fa-user-tie me-1"></i>
+              Filter by Model
+            </label>
+            <select 
+              class="form-select" 
+              v-model="filterModelId" 
+              @change="applyFilter"
+            >
               <option value="">All Models</option>
-              <option v-for="model in models" :key="model.id" :value="model.id">
+              <option v-for="model in allModels" :key="model.id" :value="model.id">
                 {{ model.name }} {{ model.surname }}
               </option>
             </select>
           </div>
         </div>
       </div>
-      <div class="col-md-6">
+      <div class="col-md-4">
         <div class="card">
-          <div class="card-body">
-            <h6 class="card-title">Search Messages</h6>
-            <div class="input-group">
-              <input
-                type="text"
-                class="form-control"
-                v-model="searchTerm"
-                placeholder="Search message content..."
-                @keyup.enter="searchMessages"
-              />
-              <button class="btn btn-outline-secondary" @click="searchMessages">
-                <i class="fas fa-search"></i>
-              </button>
-            </div>
+          <div class="card-body d-flex align-items-end">
+            <button 
+              class="btn btn-outline-secondary w-100" 
+              @click="clearFilters"
+              :disabled="!filterUserId && !filterModelId"
+            >
+              <i class="fas fa-times me-1"></i>
+              Clear Filters
+            </button>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Messages Table -->
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">All Messages ({{ pagination.total }})</h5>
-        <button class="btn btn-primary btn-sm" @click="refreshMessages">
-          <i class="fas fa-sync-alt me-1"></i>
-          Refresh
-        </button>
-      </div>
-      <div class="card-body p-0">
-        <div v-if="loading" class="text-center py-5">
-          <div class="spinner-border" role="status">
-            <span class="visually-hidden">Loading...</span>
+    <div class="row">
+      <!-- Chat Sidebar -->
+      <div class="col-lg-3">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">
+              <i class="fas fa-comments me-2"></i>
+              Conversations
+            </h5>
+            <small class="text-muted d-block mt-1">View-only mode</small>
+          </div>
+          <div class="card-body p-0">
+            <div v-if="chatsLoading" class="text-center p-3">
+              <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </div>
+            
+            <div v-else-if="models.length === 0" class="text-center p-3 text-muted">
+              <i class="fas fa-inbox fa-2x mb-2"></i>
+              <p class="mb-0">No conversations found</p>
+              <small v-if="filterUserId || filterModelId">
+                Try adjusting your filters.
+              </small>
+              <small v-else>
+                Chats will appear here when users start conversations with models.
+              </small>
+            </div>
+            
+            <div v-else class="list-group list-group-flush">
+              <div
+                v-for="model in models"
+                :key="model.id"
+                class="model-group"
+              >
+                <!-- Model Header (Collapsible) -->
+                <div
+                  class="list-group-item model-header"
+                  @click="toggleModel(model.id)"
+                  :class="{ 'model-expanded': expandedModels.includes(model.id) }"
+                  style="cursor: pointer; background-color: #f8f9fa; font-weight: 600;"
+                >
+                  <div class="d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center">
+                      <i 
+                        class="fas me-2"
+                        :class="expandedModels.includes(model.id) ? 'fa-chevron-down' : 'fa-chevron-right'"
+                      ></i>
+                      <div class="avatar me-2" style="width: 35px; height: 35px; background-color: #28a745; color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                        {{ model.name.charAt(0).toUpperCase() }}
+                      </div>
+                      <span>{{ model.name }} {{ model.surname }}</span>
+                    </div>
+                    <span class="badge bg-secondary">{{ model.users.length }}</span>
+                  </div>
+                </div>
+
+                <!-- Users under this model (Expandable) -->
+                <div
+                  v-show="expandedModels.includes(model.id)"
+                  class="users-list"
+                >
+                  <div
+                    v-for="userChat in model.users"
+                    :key="`${userChat.userId}-${model.id}`"
+                    class="list-group-item list-group-item-action user-item"
+                    @click.stop="switchChat(userChat.userId, model.id)"
+                    :class="{ active: currentChatKey === `${userChat.userId}-${model.id}` }"
+                    style="padding-left: 3rem;"
+                  >
+                    <div class="d-flex align-items-center">
+                      <div class="avatar me-3" style="width: 30px; height: 30px; background-color: #6f42c1; color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 0.8rem;">
+                        {{ userChat.user.email.charAt(0).toUpperCase() }}
+                      </div>
+                      <div class="flex-grow-1">
+                        <div class="d-flex align-items-center">
+                          <h6 class="mb-0 me-2">{{ userChat.user.email }}</h6>
+                          <span class="badge" :class="userChat.user.role === 'MANAGER' ? 'bg-success' : 'bg-primary'" style="font-size: 0.65rem;">
+                            {{ userChat.user.role }}
+                          </span>
+                        </div>
+                        <div v-if="userChat.lastMessage" class="text-truncate" style="max-width: 180px; font-size: 0.75rem; color: #6c757d;">
+                          {{ userChat.lastMessage.isFromUser ? userChat.user.email : model.name }}: {{ userChat.lastMessage.content.substring(0, 25) }}...
+                        </div>
+                        <small v-else class="text-muted">No messages yet</small>
+                      </div>
+                      <i class="fas fa-chevron-right"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        
-        <div v-else-if="messages.length === 0" class="text-center py-5">
-          <i class="fas fa-comments fa-3x text-muted mb-3"></i>
-          <h4 class="text-muted">No messages found</h4>
-        </div>
-        
-        <div v-else class="table-responsive">
-          <table class="table table-hover mb-0">
-            <thead class="table-light">
-              <tr>
-                <th>From</th>
-                <th>To</th>
-                <th>Message</th>
-                <th>Time</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="message in messages" :key="message.id">
-                <td>
-                  <div class="d-flex align-items-center">
-                    <div class="avatar me-3" style="width: 35px; height: 35px; background-color: #6f42c1; color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
-                      {{ message.user.email.charAt(0).toUpperCase() }}
-                    </div>
-                    <div>
-                      <div class="fw-bold">{{ message.user.email }}</div>
-                      <small class="text-muted">{{ message.isFromUser ? 'User' : 'Model' }}</small>
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  <div class="d-flex align-items-center">
-                    <div class="avatar me-3" style="width: 35px; height: 35px; background-color: #28a745; color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
-                      {{ message.model.name.charAt(0).toUpperCase() }}
-                    </div>
-                    <div>
-                      <div class="fw-bold">{{ message.model.name }} {{ message.model.surname }}</div>
-                      <small class="text-muted">Model</small>
-                    </div>
-                  </div>
-                </td>
-                <td>
-                  <div class="message-preview" style="max-width: 300px;">
-                    {{ message.content.length > 100 ? message.content.substring(0, 100) + '...' : message.content }}
-                  </div>
-                </td>
-                <td>
-                  <div>
-                    <div>{{ formatDate(message.createdAt) }}</div>
-                    <small class="text-muted">{{ formatTime(message.createdAt) }}</small>
-                  </div>
-                </td>
-                <td>
-                  <button
-                    class="btn btn-outline-info btn-sm"
-                    @click="viewFullMessage(message)"
-                  >
-                    <i class="fas fa-eye"></i>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
       </div>
-      
-      <!-- Pagination -->
-      <div v-if="pagination.pages > 1" class="card-footer">
-        <nav>
-          <ul class="pagination pagination-sm justify-content-center mb-0">
-            <li class="page-item" :class="{ disabled: pagination.page === 1 }">
-              <button class="page-link" @click="changePage(pagination.page - 1)" :disabled="pagination.page === 1">
-                Previous
-              </button>
-            </li>
-            <li
-              v-for="page in visiblePages"
-              :key="page"
-              class="page-item"
-              :class="{ active: page === pagination.page }"
+
+      <!-- Chat Area -->
+      <div class="col-lg-9">
+        <div v-if="!currentChatKey" class="card h-100">
+          <div class="card-body d-flex align-items-center justify-content-center">
+            <div class="text-center text-muted">
+              <i class="fas fa-comments fa-3x mb-3"></i>
+              <h4>Select a conversation to view</h4>
+              <p>Choose a user conversation from a model to view the chat messages.</p>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="card h-100 d-flex flex-column">
+          <!-- Chat Header -->
+          <div class="card-header d-flex align-items-center">
+            <div class="avatar me-3" style="width: 40px; height: 40px; background-color: #6f42c1; color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+              {{ currentUser?.email?.charAt(0).toUpperCase() }}
+            </div>
+            <div class="flex-grow-1">
+              <h6 class="mb-0">{{ currentUser?.email }}</h6>
+              <small class="text-muted">
+                Conversation with {{ currentModel?.name }} {{ currentModel?.surname }}
+                <span class="badge ms-2" :class="currentUser?.role === 'MANAGER' ? 'bg-success' : 'bg-primary'">
+                  {{ currentUser?.role }}
+                </span>
+              </small>
+            </div>
+            <div class="text-muted">
+              <span class="badge bg-secondary">View Only</span>
+            </div>
+          </div>
+
+          <!-- Messages Area -->
+          <div class="card-body flex-grow-1 d-flex flex-column p-0">
+            <div 
+              ref="messagesContainer"
+              class="messages-container flex-grow-1 p-3"
+              style="height: 500px; overflow-y: auto; background-color: #f8f9fa;"
             >
-              <button class="page-link" @click="changePage(page)">{{ page }}</button>
-            </li>
-            <li class="page-item" :class="{ disabled: pagination.page === pagination.pages }">
-              <button class="page-link" @click="changePage(pagination.page + 1)" :disabled="pagination.page === pagination.pages">
-                Next
-              </button>
-            </li>
-          </ul>
-        </nav>
+              <div v-if="messagesLoading" class="text-center py-3">
+                <div class="spinner-border spinner-border-sm" role="status">
+                  <span class="visually-hidden">Loading messages...</span>
+                </div>
+              </div>
+              
+              <div v-else-if="messages.length === 0" class="text-center py-5 text-muted">
+                <i class="fas fa-comment-dots fa-2x mb-3"></i>
+                <p>No messages in this conversation yet.</p>
+              </div>
+              
+              <div v-else>
+                <div
+                  v-for="message in messages"
+                  :key="message.id"
+                  class="message mb-3"
+                  :class="{ 'text-end': !message.isFromUser }"
+                >
+                  <div
+                    class="d-inline-block p-3 rounded"
+                    :class="message.isFromUser ? 'bg-primary text-white' : 'bg-white border'"
+                    style="max-width: 70%;"
+                  >
+                    <div class="message-content">{{ message.content }}</div>
+                    <div class="message-time mt-1" :class="message.isFromUser ? 'text-white-50' : 'text-muted'">
+                      <small>{{ formatTime(message.createdAt) }}</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- View Only Notice -->
+            <div class="border-top p-3 bg-light">
+              <div class="text-center text-muted">
+                <i class="fas fa-eye me-2"></i>
+                <small>View-only mode - Messages cannot be sent from admin interface</small>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -158,133 +251,254 @@
 
 <script>
 import api from '../../services/api'
+import { mapActions, mapGetters } from 'vuex'
 
 export default {
   name: 'AdminChats',
   data() {
     return {
-      messages: [],
       models: [],
-      loading: true,
-      selectedModelId: '',
-      searchTerm: '',
-      pagination: {
-        page: 1,
-        limit: 50,
-        total: 0,
-        pages: 0
-      }
+      allModels: [],
+      usersAndManagers: [],
+      chatsLoading: true,
+      messages: [],
+      messagesLoading: false,
+      currentUserId: null,
+      currentModelId: null,
+      currentChatKey: null,
+      currentUser: null,
+      currentModel: null,
+      expandedModels: [],
+      filterUserId: '',
+      filterModelId: ''
     }
   },
   computed: {
-    visiblePages() {
-      const pages = []
-      const start = Math.max(1, this.pagination.page - 2)
-      const end = Math.min(this.pagination.pages, this.pagination.page + 2)
-      
-      for (let i = start; i <= end; i++) {
-        pages.push(i)
-      }
-      return pages
-    }
+    ...mapGetters('auth', ['user']),
+    ...mapGetters('socket', ['connected'])
   },
   async mounted() {
+    // Connect to socket for real-time updates
+    this.connectSocket()
+    
     await Promise.all([
-      this.fetchMessages(),
-      this.fetchModels()
+      this.fetchModels(),
+      this.fetchUsersAndManagers(),
+      this.fetchChats()
     ])
+    
+    // Listen for new messages
+    this.$nextTick(() => {
+      const socket = this.$store.state.socket?.socket
+      if (socket) {
+        socket.on('new_message', (message) => {
+          console.log('Admin received message:', message)
+          if (this.currentChatKey === `${message.userId}-${message.modelId}`) {
+            this.messages.push(message)
+            this.$nextTick(() => {
+              this.scrollToBottom()
+            })
+          }
+        })
+      }
+    })
   },
   methods: {
-    async fetchMessages() {
-      try {
-        this.loading = true
-        const params = {
-          page: this.pagination.page,
-          limit: this.pagination.limit
-        }
-        
-        if (this.selectedModelId) {
-          params.modelId = this.selectedModelId
-        }
-        
-        const response = await api.get('/admin/chats', { params })
-        this.messages = response.data.messages
-        this.pagination = response.data.pagination
-      } catch (error) {
-        console.error('Error fetching messages:', error)
-        this.$swal({
-          icon: 'error',
-          title: 'Error',
-          text: 'Failed to fetch messages. Please try again.',
-          confirmButtonText: 'OK'
-        })
-      } finally {
-        this.loading = false
-      }
-    },
+    ...mapActions('socket', ['connectSocket']),
 
     async fetchModels() {
       try {
         const response = await api.get('/admin/models')
-        this.models = response.data.models
+        this.allModels = response.data.models || []
       } catch (error) {
         console.error('Error fetching models:', error)
       }
     },
 
-    async filterByModel() {
-      this.pagination.page = 1
-      await this.fetchMessages()
+    async fetchUsersAndManagers() {
+      try {
+        const response = await api.get('/admin/users-and-managers')
+        this.usersAndManagers = response.data.users || []
+      } catch (error) {
+        console.error('Error fetching users and managers:', error)
+      }
     },
 
-    async searchMessages() {
-      this.pagination.page = 1
-      await this.fetchMessages()
+    async fetchChats() {
+      try {
+        this.chatsLoading = true
+        const params = {}
+        if (this.filterUserId) {
+          params.filterUserId = this.filterUserId
+        }
+        if (this.filterModelId) {
+          params.filterModelId = this.filterModelId
+        }
+        
+        const response = await api.get('/admin/chat-conversations', { params })
+        this.models = response.data.models || []
+        
+        // Auto-expand if filtered by model
+        if (this.filterModelId && this.models.length === 1) {
+          this.expandedModels = [this.models[0].id]
+        }
+      } catch (error) {
+        console.error('Error fetching chats:', error)
+        this.$swal({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to load conversations. Please try again.',
+          confirmButtonText: 'OK'
+        })
+      } finally {
+        this.chatsLoading = false
+      }
     },
 
-    async changePage(page) {
-      this.pagination.page = page
-      await this.fetchMessages()
+    toggleModel(modelId) {
+      const index = this.expandedModels.indexOf(modelId)
+      if (index > -1) {
+        this.expandedModels.splice(index, 1)
+      } else {
+        this.expandedModels.push(modelId)
+      }
     },
 
-    async refreshMessages() {
-      await this.fetchMessages()
+    async switchChat(userId, modelId) {
+      const chatKey = `${userId}-${modelId}`
+      if (this.currentChatKey === chatKey) return
+
+      this.currentUserId = userId
+      this.currentModelId = modelId
+      this.currentChatKey = chatKey
+      
+      // Find current user and model from models structure
+      const model = this.models.find(m => m.id === modelId)
+      if (model) {
+        const userChat = model.users.find(u => u.userId === userId)
+        if (userChat) {
+          this.currentUser = userChat.user
+          this.currentModel = model
+        }
+      }
+      
+      this.messages = []
+      
+      // Load messages
+      await this.loadMessages()
     },
 
-    viewFullMessage(message) {
-      this.$swal({
-        title: 'Full Message',
-        html: `
-          <div class="text-start">
-            <div class="mb-3">
-              <strong>From:</strong> ${message.user.email} (${message.isFromUser ? 'User' : 'Model'})
-            </div>
-            <div class="mb-3">
-              <strong>To:</strong> ${message.model.name} ${message.model.surname} (Model)
-            </div>
-            <div class="mb-3">
-              <strong>Time:</strong> ${this.formatDate(message.createdAt)} at ${this.formatTime(message.createdAt)}
-            </div>
-            <div class="mb-3">
-              <strong>Message:</strong>
-              <div class="border p-3 rounded bg-light mt-2">
-                ${message.content}
-              </div>
-            </div>
-          </div>
-        `,
-        confirmButtonText: 'Close',
-        width: '600px'
-      })
+    async loadMessages() {
+      if (!this.currentUserId || !this.currentModelId) return
+
+      try {
+        this.messagesLoading = true
+        const response = await api.get('/admin/chat-messages', {
+          params: {
+            userId: this.currentUserId,
+            modelId: this.currentModelId
+          }
+        })
+        this.messages = response.data.messages || []
+
+        // Scroll to bottom
+        this.$nextTick(() => {
+          this.scrollToBottom()
+        })
+      } catch (error) {
+        console.error('Error loading messages:', error)
+        this.$swal({
+          icon: 'error',
+          title: 'Error',
+          text: 'Failed to load messages. Please try again.',
+          confirmButtonText: 'OK'
+        })
+      } finally {
+        this.messagesLoading = false
+      }
     },
 
-    formatDate(timestamp) {
-      return new Date(timestamp).toLocaleDateString()
+    applyFilter() {
+      this.currentChatKey = null
+      this.currentUser = null
+      this.currentModel = null
+      this.messages = []
+      this.expandedModels = []
+      this.fetchChats()
+    },
+
+    clearFilters() {
+      this.filterUserId = ''
+      this.filterModelId = ''
+      this.applyFilter()
+    },
+
+    scrollToBottom() {
+      const container = this.$refs.messagesContainer
+      if (container) {
+        container.scrollTop = container.scrollHeight
+      }
     },
 
     formatTime(timestamp) {
-      return new Date(timestamp).toLocaleTimeString()
+      const date = new Date(timestamp)
+      const now = new Date()
+      const diff = now - date
+      
+      if (diff < 60000) { // Less than 1 minute
+        return 'Just now'
+      } else if (diff < 3600000) { // Less than 1 hour
+        return Math.floor(diff / 60000) + 'm ago'
+      } else if (diff < 86400000) { // Less than 1 day
+        return Math.floor(diff / 3600000) + 'h ago'
+      } else {
+        return date.toLocaleDateString()
+      }
     }
   }
 }
 </script>
+
+<style scoped>
+.messages-container {
+  scroll-behavior: smooth;
+}
+
+.message {
+  word-wrap: break-word;
+}
+
+.avatar {
+  font-weight: bold;
+}
+
+.model-header {
+  transition: background-color 0.2s;
+}
+
+.model-header:hover {
+  background-color: #e9ecef !important;
+}
+
+.model-expanded {
+  background-color: #e3f2fd !important;
+  border-color: #2196f3 !important;
+}
+
+.user-item {
+  transition: background-color 0.2s;
+}
+
+.list-group-item.user-item.active {
+  background-color: #e3f2fd;
+  border-color: #2196f3;
+}
+
+.list-group-item.user-item:hover {
+  background-color: #f5f5f5;
+}
+
+.users-list {
+  background-color: #ffffff;
+}
+</style>
