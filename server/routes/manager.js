@@ -577,7 +577,7 @@ router.post('/plans', upload.array('files', 50), async (req, res) => {
 router.put('/plans/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, description, price, duration } = req.body;
+        const { name, description, price, duration, isActive } = req.body;
 
         const manager = await prisma.manager.findUnique({
             where: { userId: req.user.id },
@@ -600,14 +600,21 @@ router.put('/plans/:id', async (req, res) => {
             return res.status(404).json({ message: 'Plan not found' });
         }
 
+        const data = {
+            name: name ?? plan.name,
+            description: description ?? plan.description,
+            price: price !== undefined ? parseFloat(price) : plan.price,
+            duration: duration !== undefined ? parseInt(duration) : plan.duration
+        };
+
+        if (isActive !== undefined) {
+            const parsedActive = (isActive === true || isActive === 'true');
+            data.isActive = parsedActive;
+        }
+
         const updatedPlan = await prisma.plan.update({
             where: { id: id },
-            data: {
-                name: name || plan.name,
-                description: description || plan.description,
-                price: price ? parseFloat(price) : plan.price,
-                duration: duration ? parseInt(duration) : plan.duration
-            }
+            data
         });
 
         res.json({

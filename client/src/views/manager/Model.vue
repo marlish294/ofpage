@@ -215,42 +215,57 @@
                 <div class="card-body">
                   <div class="d-flex justify-content-between align-items-start mb-2">
                     <h6 class="card-title mb-0">{{ plan.name }}</h6>
-                    <div class="dropdown">
+                    <div>
                       <button
                         class="btn btn-sm btn-outline-secondary"
                         type="button"
-                        data-bs-toggle="dropdown"
-                        @click="togglePlanMedia(plan.id)"
+                        @click="startEditPlan(plan)"
+                        title="Edit plan"
                       >
                         <i class="fas fa-ellipsis-v"></i>
                       </button>
-                      <ul class="dropdown-menu">
-                        <li>
-                          <button class="dropdown-item" @click="editPlan(plan)">
-                            <i class="fas fa-edit me-2"></i>
-                            Edit
-                          </button>
-                        </li>
-                        <li>
-                          <button class="dropdown-item text-danger" @click="deletePlan(plan.id)">
-                            <i class="fas fa-trash me-2"></i>
-                            Delete
-                          </button>
-                        </li>
-                        <li><hr class="dropdown-divider" /></li>
-                        <li>
-                          <button class="dropdown-item" @click="togglePlanMedia(plan.id)">
-                            <i class="fas fa-images me-2"></i>
-                            Manage Media
-                          </button>
-                        </li>
-                      </ul>
                     </div>
                   </div>
                   <p class="card-text small text-muted">{{ plan.description }}</p>
                   <div class="d-flex justify-content-between align-items-center">
                     <span class="fw-bold text-success">${{ plan.price }}</span>
                     <small class="text-muted">{{ plan.duration }} days</small>
+                  </div>
+
+                  <!-- Inline plan edit -->
+                  <div v-if="planEditOpen && planEditOpen[plan.id]" class="mt-3 border rounded p-3 bg-light">
+                    <div class="row g-3">
+                      <div class="col-md-6">
+                        <label class="form-label">Plan Name</label>
+                        <input type="text" class="form-control" v-model="planEdit[plan.id].name" />
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Price ($)</label>
+                        <input type="number" min="0" step="0.01" class="form-control" v-model="planEdit[plan.id].price" />
+                      </div>
+                      <div class="col-12">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" rows="3" v-model="planEdit[plan.id].description"></textarea>
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">Duration (days)</label>
+                        <input type="number" min="1" class="form-control" v-model="planEdit[plan.id].duration" />
+                      </div>
+                      
+                    </div>
+                    <div class="mt-3 d-flex gap-2">
+                      <button class="btn btn-primary btn-sm" :disabled="savingPlan" @click="saveEditPlan(plan.id)">
+                        <span v-if="savingPlan" class="spinner-border spinner-border-sm me-1"></span>
+                        Save Changes
+                      </button>
+                      <button class="btn btn-outline-secondary btn-sm" @click="cancelEditPlan(plan.id)">Cancel</button>
+                      <button class="btn btn-danger btn-sm ms-auto" @click="deletePlan(plan.id)">
+                        <i class="fas fa-trash me-1"></i> Delete Plan
+                      </button>
+                      <button class="btn btn-outline-info btn-sm" @click="togglePlanMedia(plan.id)">
+                        <i class="fas fa-images me-1"></i> Manage Media
+                      </button>
+                    </div>
                   </div>
 
                   <!-- Media management content -->
@@ -374,6 +389,8 @@
                 </div>
               </div>
 
+              
+
               <!-- Media inputs for plan creation -->
               <div v-if="!editingPlan" class="mb-3">
                 <label class="form-label">Media (photos/videos)</label>
@@ -441,7 +458,8 @@ export default {
         name: '',
         description: '',
         price: '',
-        duration: ''
+        duration: '',
+        isActive: true
       },
       planFiles: [],
       planMedia: {}, // { [planId]: Media[] }
@@ -654,7 +672,8 @@ export default {
         name: '',
         description: '',
         price: '',
-        duration: ''
+        duration: '',
+        isActive: true
       }
       this.planFiles = []
       this.editingPlan = null
@@ -864,6 +883,8 @@ export default {
       planMedia: {},
       planMediaLoading: {},
       planMediaExpanded: {},
+      planEdit: {},
+      planEditOpen: {},
       savingPlan: false,
       selectedPhotoFile: null,
       selectedVideoFile: null
@@ -1122,15 +1143,8 @@ export default {
     },
 
     editPlan(plan) {
-      this.editingPlan = plan
-      this.planForm = {
-        name: plan.name,
-        description: plan.description,
-        price: plan.price,
-        duration: plan.duration
-      }
-      const modal = new bootstrap.Modal(document.getElementById('planModal'))
-      modal.show()
+      // legacy modal path not used; keep for compatibility
+      this.startEditPlan(plan)
     },
 
     resetPlanForm() {
@@ -1181,6 +1195,47 @@ export default {
           text: error.response?.data?.message || 'Failed to save plan. Please try again.',
           confirmButtonText: 'OK'
         })
+      } finally {
+        this.savingPlan = false
+      }
+    },
+
+    startEditPlan(plan) {
+      this.planEdit = {
+        ...this.planEdit,
+        [plan.id]: {
+          id: plan.id,
+          name: plan.name,
+          description: plan.description,
+          price: plan.price,
+          duration: plan.duration,
+          isActive: plan.isActive !== undefined ? plan.isActive : true
+        }
+      }
+      this.planEditOpen = { ...this.planEditOpen, [plan.id]: true }
+    },
+
+    cancelEditPlan(planId) {
+      this.planEditOpen = { ...this.planEditOpen, [planId]: false }
+    },
+
+    async saveEditPlan(planId) {
+      try {
+        this.savingPlan = true
+        const form = this.planEdit[planId]
+        await api.put(`/manager/plans/${planId}`, {
+          name: form.name,
+          description: form.description,
+          price: form.price,
+          duration: form.duration,
+          isActive: form.isActive
+        })
+        await this.loadPlans()
+        this.planEditOpen = { ...this.planEditOpen, [planId]: false }
+        this.$swal({ icon: 'success', title: 'Plan updated', timer: 1200, showConfirmButton: false })
+      } catch (e) {
+        console.error('Failed to update plan', e)
+        this.$swal({ icon: 'error', title: 'Update failed', text: e.response?.data?.message || 'Try again' })
       } finally {
         this.savingPlan = false
       }
