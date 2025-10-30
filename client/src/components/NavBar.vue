@@ -26,6 +26,12 @@
           
 
           <li v-if="isUser" class="nav-item">
+            <router-link class="nav-link" to="/user/models">
+              <i class="fas fa-images me-1"></i>
+              Models
+            </router-link>
+          </li>
+          <li v-if="isUser" class="nav-item">
             <router-link class="nav-link" to="/user/chat">
               <i class="fas fa-comments me-1"></i>
               Chats

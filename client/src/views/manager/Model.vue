@@ -220,6 +220,7 @@
                         class="btn btn-sm btn-outline-secondary"
                         type="button"
                         data-bs-toggle="dropdown"
+                        @click="togglePlanMedia(plan.id)"
                       >
                         <i class="fas fa-ellipsis-v"></i>
                       </button>
@@ -236,6 +237,13 @@
                             Delete
                           </button>
                         </li>
+                        <li><hr class="dropdown-divider" /></li>
+                        <li>
+                          <button class="dropdown-item" @click="togglePlanMedia(plan.id)">
+                            <i class="fas fa-images me-2"></i>
+                            Manage Media
+                          </button>
+                        </li>
                       </ul>
                     </div>
                   </div>
@@ -243,6 +251,45 @@
                   <div class="d-flex justify-content-between align-items-center">
                     <span class="fw-bold text-success">${{ plan.price }}</span>
                     <small class="text-muted">{{ plan.duration }} days</small>
+                  </div>
+
+                  <!-- Media management content -->
+                  <div v-if="planMediaExpanded && planMediaExpanded[plan.id]" class="mt-3 border rounded p-2 bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <strong>Plan Media</strong>
+                      <div>
+                        <label class="btn btn-sm btn-secondary mb-0">
+                          <i class="fas fa-upload me-1"></i>
+                          Upload
+                          <input type="file" class="d-none" accept="image/*,video/*" multiple @change="(e) => uploadMoreMedia(plan.id, e)" />
+                        </label>
+                      </div>
+                    </div>
+
+                    <div v-if="planMediaLoading && planMediaLoading[plan.id]" class="text-center py-3 text-muted">
+                      <span class="spinner-border spinner-border-sm me-2"></span>Loading...
+                    </div>
+
+                    <div v-else>
+                      <div v-if="!(planMedia && planMedia[plan.id]) || (planMedia[plan.id] || []).length === 0" class="text-center text-muted py-3">
+                        No media yet for this plan.
+                      </div>
+                      <div v-else class="row g-2">
+                        <div v-for="m in (planMedia && planMedia[plan.id] ? planMedia[plan.id] : [])" :key="m.id" class="col-6">
+                          <div class="position-relative border rounded p-1 bg-white">
+                            <template v-if="m.type === 'IMAGE'">
+                              <img :src="m.url" class="img-fluid rounded" alt="plan media" />
+                            </template>
+                            <template v-else>
+                              <video :src="m.url" controls preload="metadata" class="w-100 rounded"></video>
+                            </template>
+                            <button class="btn btn-sm btn-danger position-absolute" style="top: 6px; right: 6px" @click="deleteMediaItem(m.id, plan.id)">
+                              <i class="fas fa-trash"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -326,6 +373,23 @@
                   </div>
                 </div>
               </div>
+
+              <!-- Media inputs for plan creation -->
+              <div v-if="!editingPlan" class="mb-3">
+                <label class="form-label">Media (photos/videos)</label>
+                <input
+                  type="file"
+                  class="form-control"
+                  id="planFiles"
+                  accept="image/*,video/*"
+                  multiple
+                  @change="handlePlanFiles"
+                />
+                <div class="form-text">You can select multiple files. Images and videos are supported.</div>
+                <div v-if="planFiles && planFiles.length" class="small text-muted mt-1">
+                  {{ planFiles.length }} file(s) selected
+                </div>
+              </div>
             </form>
           </div>
           <div class="modal-footer">
@@ -379,6 +443,10 @@ export default {
         price: '',
         duration: ''
       },
+      planFiles: [],
+      planMedia: {}, // { [planId]: Media[] }
+      planMediaLoading: {}, // { [planId]: boolean }
+      planMediaExpanded: {}, // { [planId]: boolean }
       savingPlan: false,
       selectedPhotoFile: null,
       selectedVideoFile: null
@@ -588,6 +656,7 @@ export default {
         price: '',
         duration: ''
       }
+      this.planFiles = []
       this.editingPlan = null
     },
 
@@ -598,7 +667,17 @@ export default {
         if (this.editingPlan) {
           await api.put(`/manager/plans/${this.editingPlan.id}`, this.planForm)
         } else {
-          await api.post('/manager/plans', this.planForm)
+          const formData = new FormData()
+          formData.append('name', this.planForm.name)
+          formData.append('description', this.planForm.description)
+          formData.append('price', this.planForm.price)
+          formData.append('duration', this.planForm.duration)
+          if (this.planFiles && this.planFiles.length) {
+            for (const file of this.planFiles) {
+              formData.append('files', file)
+            }
+          }
+          await api.post('/manager/plans', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
         }
 
         this.$swal({
@@ -625,6 +704,92 @@ export default {
         this.savingPlan = false
       }
     },
+
+    handlePlanFiles(event) {
+      const files = Array.from(event.target.files || [])
+      if (!files.length) {
+        this.planFiles = []
+        return
+      }
+      const validated = []
+      for (const file of files) {
+        const isImage = file.type.startsWith('image/')
+        const isVideo = file.type.startsWith('video/')
+        if (!isImage && !isVideo) continue
+        const maxSize = isImage ? 10 * 1024 * 1024 : 200 * 1024 * 1024
+        if (file.size <= maxSize) {
+          validated.push(file)
+        }
+      }
+      this.planFiles = validated
+    },
+
+    async togglePlanMedia(planId) {
+      this.planMediaExpanded = {
+        ...this.planMediaExpanded,
+        [planId]: !this.planMediaExpanded[planId]
+      }
+      if (this.planMediaExpanded[planId] && !this.planMedia[planId]) {
+        await this.loadPlanMedia(planId)
+      }
+    },
+
+    async loadPlanMedia(planId) {
+      try {
+        this.planMediaLoading = { ...this.planMediaLoading, [planId]: true }
+        const { data } = await api.get(`/manager/plans/${planId}/media`)
+        this.planMedia = { ...this.planMedia, [planId]: data.media || [] }
+      } catch (e) {
+        console.error('Error loading plan media:', e)
+      } finally {
+        this.planMediaLoading = { ...this.planMediaLoading, [planId]: false }
+      }
+    },
+
+    async uploadMoreMedia(planId, event) {
+      const files = Array.from(event.target.files || [])
+      if (!files.length) return
+      const form = new FormData()
+      for (const file of files) {
+        const isImage = file.type.startsWith('image/')
+        const isVideo = file.type.startsWith('video/')
+        if (!isImage && !isVideo) continue
+        const maxSize = isImage ? 10 * 1024 * 1024 : 200 * 1024 * 1024
+        if (file.size <= maxSize) form.append('files', file)
+      }
+      try {
+        this.planMediaLoading = { ...this.planMediaLoading, [planId]: true }
+        await api.post(`/manager/plans/${planId}/media`, form, { headers: { 'Content-Type': 'multipart/form-data' } })
+        await this.loadPlanMedia(planId)
+        // reset input value
+        event.target.value = ''
+      } catch (e) {
+        console.error('Error uploading media:', e)
+      } finally {
+        this.planMediaLoading = { ...this.planMediaLoading, [planId]: false }
+      }
+    },
+
+    async deleteMediaItem(mediaId, planId) {
+      const result = await this.$swal({
+        icon: 'warning',
+        title: 'Delete Media',
+        text: 'Are you sure you want to delete this media?',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete',
+        cancelButtonText: 'Cancel'
+      })
+      if (!result.isConfirmed) return
+      try {
+        this.planMediaLoading = { ...this.planMediaLoading, [planId]: true }
+        await api.delete(`/manager/media/${mediaId}`)
+        await this.loadPlanMedia(planId)
+      } catch (e) {
+        console.error('Error deleting media:', e)
+      } finally {
+        this.planMediaLoading = { ...this.planMediaLoading, [planId]: false }
+      }
+    }
 
     async deletePlan(planId) {
       const result = await this.$swal({
@@ -695,6 +860,10 @@ export default {
         price: '',
         duration: ''
       },
+      planFiles: [],
+      planMedia: {},
+      planMediaLoading: {},
+      planMediaExpanded: {},
       savingPlan: false,
       selectedPhotoFile: null,
       selectedVideoFile: null
@@ -981,7 +1150,15 @@ export default {
         if (this.editingPlan) {
           await api.put(`/manager/plans/${this.editingPlan.id}`, this.planForm)
         } else {
-          await api.post('/manager/plans', this.planForm)
+          const formData = new FormData()
+          formData.append('name', this.planForm.name)
+          formData.append('description', this.planForm.description)
+          formData.append('price', this.planForm.price)
+          formData.append('duration', this.planForm.duration)
+          for (const file of this.planFiles) {
+            formData.append('files', file)
+          }
+          await api.post('/manager/plans', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
         }
 
         this.$swal({
@@ -1006,6 +1183,83 @@ export default {
         })
       } finally {
         this.savingPlan = false
+      }
+    },
+
+    handlePlanFiles(event) {
+      const files = Array.from(event.target.files || [])
+      if (!files.length) { this.planFiles = []; return }
+      const validated = []
+      for (const f of files) {
+        const isImg = f.type.startsWith('image/')
+        const isVid = f.type.startsWith('video/')
+        if (!isImg && !isVid) continue
+        const max = isImg ? 10 * 1024 * 1024 : 200 * 1024 * 1024
+        if (f.size <= max) validated.push(f)
+      }
+      this.planFiles = validated
+    },
+
+    async togglePlanMedia(planId) {
+      this.planMediaExpanded = { ...this.planMediaExpanded, [planId]: !this.planMediaExpanded[planId] }
+      if (this.planMediaExpanded[planId] && !this.planMedia[planId]) {
+        await this.loadPlanMedia(planId)
+      }
+    },
+
+    async loadPlanMedia(planId) {
+      try {
+        this.planMediaLoading = { ...this.planMediaLoading, [planId]: true }
+        const { data } = await api.get(`/manager/plans/${planId}/media`)
+        this.planMedia = { ...this.planMedia, [planId]: data.media || [] }
+      } catch (e) {
+        console.error('Error loading plan media:', e)
+      } finally {
+        this.planMediaLoading = { ...this.planMediaLoading, [planId]: false }
+      }
+    },
+
+    async uploadMoreMedia(planId, event) {
+      const files = Array.from(event.target.files || [])
+      if (!files.length) return
+      const form = new FormData()
+      for (const file of files) {
+        const isImage = file.type.startsWith('image/')
+        const isVideo = file.type.startsWith('video/')
+        if (!isImage && !isVideo) continue
+        const maxSize = isImage ? 10 * 1024 * 1024 : 200 * 1024 * 1024
+        if (file.size <= maxSize) form.append('files', file)
+      }
+      try {
+        this.planMediaLoading = { ...this.planMediaLoading, [planId]: true }
+        await api.post(`/manager/plans/${planId}/media`, form, { headers: { 'Content-Type': 'multipart/form-data' } })
+        await this.loadPlanMedia(planId)
+        event.target.value = ''
+      } catch (e) {
+        console.error('Error uploading media:', e)
+      } finally {
+        this.planMediaLoading = { ...this.planMediaLoading, [planId]: false }
+      }
+    },
+
+    async deleteMediaItem(mediaId, planId) {
+      const result = await this.$swal({
+        icon: 'warning',
+        title: 'Delete Media',
+        text: 'Are you sure you want to delete this media?',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete',
+        cancelButtonText: 'Cancel'
+      })
+      if (!result.isConfirmed) return
+      try {
+        this.planMediaLoading = { ...this.planMediaLoading, [planId]: true }
+        await api.delete(`/manager/media/${mediaId}`)
+        await this.loadPlanMedia(planId)
+      } catch (e) {
+        console.error('Error deleting media:', e)
+      } finally {
+        this.planMediaLoading = { ...this.planMediaLoading, [planId]: false }
       }
     },
 

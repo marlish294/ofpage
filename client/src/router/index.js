@@ -292,6 +292,7 @@ import Register from '../views/auth/Register.vue'
 // User views
 import UserDashboard from '../views/user/Dashboard.vue'
 import UserChat from '../views/user/Chat.vue'
+import UserModels from '../views/user/Models.vue'
 
 // Manager views
 import ManagerDashboard from '../views/manager/Dashboard.vue'
@@ -313,6 +314,7 @@ const routes = [
     // User routes
     { path: '/user', name: 'UserDashboard', component: UserDashboard, meta: { requiresAuth: true, role: 'USER' } },
     { path: '/user/chat/:modelId?', name: 'UserChat', component: UserChat, props: true, meta: { requiresAuth: true, role: 'USER' } },
+    { path: '/user/models', name: 'UserModels', component: UserModels, meta: { requiresAuth: true, role: 'USER' } },
 
     // Manager routes
     { path: '/manager', name: 'ManagerDashboard', component: ManagerDashboard, meta: { requiresAuth: true, role: 'MANAGER' } },

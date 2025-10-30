@@ -83,8 +83,24 @@ model Plan {
   // Relations
   model         Model          @relation(fields: [modelId], references: [id], onDelete: Cascade)
   subscriptions Subscription[]
+  media         Media[]
 
   @@map("plans")
+}
+
+model Media {
+  id        String   @id @default(cuid())
+  planId    String
+  type      String   // 'IMAGE' or 'VIDEO'
+  url       String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  plan      Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@map("media")
 }
 
 model Subscription {
@@ -102,8 +118,7 @@ model Subscription {
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   model Model @relation(fields: [modelId], references: [id], onDelete: Cascade)
   plan  Plan  @relation(fields: [planId], references: [id])
-
-  @@unique([userId, modelId])
+  
   @@map("subscriptions")
 }
 

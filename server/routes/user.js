@@ -436,17 +436,17 @@ router.post('/subscribe', async (req, res) => {
             return res.status(400).json({ message: 'Model ID and Plan ID are required' });
         }
 
-        // Check if already subscribed
+        // Optional: prevent duplicate subscription to the exact same plan
         const existingSubscription = await prisma.subscription.findFirst({
             where: {
                 userId: req.user.id,
-                modelId,
+                planId,
                 isActive: true
             }
         });
 
         if (existingSubscription) {
-            return res.status(400).json({ message: 'Already subscribed to this model' });
+            return res.status(400).json({ message: 'Already subscribed to this plan' });
         }
 
         // Verify model and plan exist
@@ -500,8 +500,8 @@ router.post('/subscribe', async (req, res) => {
                 }
             }
         });
-        // ✅ Automatically create private chat for user ↔ model
-        await prisma.chat.upsert({
+        // ✅ Automatically create private chat for user ↔ model (single per user-model)
+        const ensuredChat = await prisma.chat.upsert({
             where: {
                 userId_modelId: {
                     userId: req.user.id,
@@ -514,6 +514,20 @@ router.post('/subscribe', async (req, res) => {
                 modelId: modelId
             }
         });
+
+        // Cleanup: if any duplicate chats exist due to historical data, remove them now
+        try {
+            const duplicates = await prisma.chat.findMany({
+                where: { userId: req.user.id, modelId: modelId }
+            });
+            const idsToDelete = duplicates.filter(c => c.id !== ensuredChat.id).map(c => c.id);
+            if (idsToDelete.length > 0) {
+                await prisma.message.deleteMany({ where: { chatId: { in: idsToDelete } } });
+                await prisma.chat.deleteMany({ where: { id: { in: idsToDelete } } });
+            }
+        } catch (cleanupErr) {
+            console.warn('Chat cleanup warning:', cleanupErr?.message || cleanupErr);
+        }
 
         res.status(201).json({
             message: 'Subscription created successfully',
@@ -580,13 +594,20 @@ router.get('/chat-models', async (req, res) => {
             orderBy: { createdAt: 'desc' }
         });
 
-        const chatModels = subscriptions.map(sub => ({
-            id: sub.model.id,
-            name: sub.model.name,
-            surname: sub.model.surname,
-            photoUrl: sub.model.photoUrl,
-            subscriptionId: sub.id
-        }));
+        // Deduplicate by model.id to ensure only one chat per model
+        const seenModelIds = new Set();
+        const chatModels = [];
+        for (const sub of subscriptions) {
+            if (!sub.model) continue;
+            if (seenModelIds.has(sub.model.id)) continue;
+            seenModelIds.add(sub.model.id);
+            chatModels.push({
+                id: sub.model.id,
+                name: sub.model.name,
+                surname: sub.model.surname,
+                photoUrl: sub.model.photoUrl
+            });
+        }
 
         res.json({ chatModels });
     } catch (error) {
@@ -706,6 +727,95 @@ router.post('/messages', async (req, res) => {
     } catch (error) {
         console.error('Send message error:', error);
         res.status(500).json({ message: 'Failed to send message' });
+    }
+});
+
+// ======================================================
+// 🔓 Get media for a plan (requires active subscription)
+// ======================================================
+router.get('/plans/:planId/media', async (req, res) => {
+    try {
+        const { planId } = req.params;
+
+        // Ensure plan exists and is active
+        const plan = await prisma.plan.findFirst({
+            where: { id: planId, isActive: true },
+            include: { model: true }
+        });
+        if (!plan || !plan.model || !plan.model.isActive) {
+            return res.status(404).json({ message: 'Plan not found' });
+        }
+
+        // Verify user has an active subscription for this plan
+        const activeSubscription = await prisma.subscription.findFirst({
+            where: {
+                userId: req.user.id,
+                planId: planId,
+                isActive: true,
+                endDate: { gte: new Date() }
+            }
+        });
+
+        if (!activeSubscription) {
+            return res.status(403).json({ message: 'No access to this plan' });
+        }
+
+        const media = await prisma.media.findMany({
+            where: { planId: planId, isActive: true },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        res.json({ media });
+    } catch (error) {
+        console.error('Get plan media error:', error);
+        res.status(500).json({ message: 'Failed to fetch media' });
+    }
+});
+
+// ======================================================
+// 🔓 Get ALL media for a model, aggregated across user's active plan subscriptions
+// ======================================================
+router.get('/models/:modelId/media', async (req, res) => {
+    try {
+        const { modelId } = req.params;
+
+        // Ensure model exists and is active
+        const model = await prisma.model.findFirst({ where: { id: modelId, isActive: true } });
+        if (!model) return res.status(404).json({ message: 'Model not found' });
+
+        // Find user's active subscriptions for this model (not expired)
+        const activeSubs = await prisma.subscription.findMany({
+            where: {
+                userId: req.user.id,
+                modelId: modelId,
+                isActive: true,
+                endDate: { gte: new Date() }
+            },
+            select: { planId: true }
+        });
+
+        if (activeSubs.length === 0) {
+            return res.status(403).json({ message: 'No active subscription for this model' });
+        }
+
+        const planIds = activeSubs.map(s => s.planId);
+
+        // Fetch media for all subscribed plans
+        const media = await prisma.media.findMany({
+            where: { planId: { in: planIds }, isActive: true },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        // Optional: include plan metadata for grouping on UI
+        const plans = await prisma.plan.findMany({
+            where: { id: { in: planIds } },
+            select: { id: true, name: true, description: true, price: true, duration: true }
+        });
+
+        res.json({ media, plans });
+    } catch (error) {
+        console.error('Get model media (aggregate) error:', error);
+        res.status(500).json({ message: 'Failed to fetch media' });
     }
 });
 

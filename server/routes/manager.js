@@ -506,7 +506,7 @@ router.post('/model', upload.fields([
 
 
 // Create plan
-router.post('/plans', async (req, res) => {
+router.post('/plans', upload.array('files', 50), async (req, res) => {
     try {
         const { name, description, price, duration } = req.body;
 
@@ -542,9 +542,29 @@ router.post('/plans', async (req, res) => {
             }
         });
 
+        // If files were uploaded, store them as media
+        const createdMedia = [];
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                const result = await uploadFile(file.buffer, file.originalname, file.mimetype);
+                if (result.success) {
+                    const type = file.mimetype.startsWith('image/') ? 'IMAGE' : (file.mimetype.startsWith('video/') ? 'VIDEO' : 'OTHER');
+                    const media = await prisma.media.create({
+                        data: {
+                            planId: plan.id,
+                            type,
+                            url: result.url
+                        }
+                    });
+                    createdMedia.push(media);
+                }
+            }
+        }
+
         res.status(201).json({
             message: 'Plan created successfully',
-            plan
+            plan,
+            media: createdMedia
         });
 
     } catch (error) {
@@ -640,6 +660,123 @@ router.delete('/plans/:id', async (req, res) => {
     }
 });
 
+// Upload media files to a plan (images/videos)
+router.post('/plans/:id/media', upload.array('files', 50), async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const manager = await prisma.manager.findUnique({
+            where: { userId: req.user.id },
+            include: { model: true }
+        });
+
+        if (!manager || !manager.model) {
+            return res.status(404).json({ message: 'Model not found' });
+        }
+
+        const plan = await prisma.plan.findFirst({
+            where: { id, modelId: manager.model.id, isActive: true }
+        });
+
+        if (!plan) {
+            return res.status(404).json({ message: 'Plan not found' });
+        }
+
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ message: 'No files uploaded' });
+        }
+
+        const createdMedia = [];
+        for (const file of req.files) {
+            const result = await uploadFile(file.buffer, file.originalname, file.mimetype);
+            if (result.success) {
+                const type = file.mimetype.startsWith('image/') ? 'IMAGE' : (file.mimetype.startsWith('video/') ? 'VIDEO' : 'OTHER');
+                const media = await prisma.media.create({
+                    data: {
+                        planId: plan.id,
+                        type,
+                        url: result.url
+                    }
+                });
+                createdMedia.push(media);
+            }
+        }
+
+        res.status(201).json({ message: 'Media uploaded', media: createdMedia });
+    } catch (error) {
+        console.error('Upload media error:', error);
+        res.status(500).json({ message: 'Failed to upload media' });
+    }
+});
+
+// List media for a plan (manager-owned)
+router.get('/plans/:id/media', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const manager = await prisma.manager.findUnique({
+            where: { userId: req.user.id },
+            include: { model: true }
+        });
+
+        if (!manager || !manager.model) {
+            return res.status(404).json({ message: 'Model not found' });
+        }
+
+        const plan = await prisma.plan.findFirst({
+            where: { id, modelId: manager.model.id, isActive: true }
+        });
+
+        if (!plan) {
+            return res.status(404).json({ message: 'Plan not found' });
+        }
+
+        const media = await prisma.media.findMany({
+            where: { planId: plan.id, isActive: true },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        res.json({ media });
+    } catch (error) {
+        console.error('List media error:', error);
+        res.status(500).json({ message: 'Failed to fetch media' });
+    }
+});
+
+// Soft-delete a media item
+router.delete('/media/:mediaId', async (req, res) => {
+    try {
+        const { mediaId } = req.params;
+
+        const manager = await prisma.manager.findUnique({
+            where: { userId: req.user.id },
+            include: { model: true }
+        });
+
+        if (!manager || !manager.model) {
+            return res.status(404).json({ message: 'Model not found' });
+        }
+
+        const media = await prisma.media.findUnique({ where: { id: mediaId } });
+        if (!media) return res.status(404).json({ message: 'Media not found' });
+
+        const plan = await prisma.plan.findFirst({
+            where: { id: media.planId, modelId: manager.model.id }
+        });
+        if (!plan) return res.status(403).json({ message: 'Not authorized for this media' });
+
+        await prisma.media.update({
+            where: { id: mediaId },
+            data: { isActive: false }
+        });
+
+        res.json({ message: 'Media deleted' });
+    } catch (error) {
+        console.error('Delete media error:', error);
+        res.status(500).json({ message: 'Failed to delete media' });
+    }
+});
+
 // Get dashboard stats
 router.get('/dashboard', async (req, res) => {
     try {
@@ -720,6 +857,7 @@ router.get('/subscribers', async (req, res) => {
                 modelId: manager.model.id,
                 isActive: true
             },
+            distinct: ['userId'],
             include: {
                 user: {
                     select: {
