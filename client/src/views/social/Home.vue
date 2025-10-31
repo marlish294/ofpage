@@ -1,12 +1,12 @@
 <template>
-  <div style="min-height: 100vh; background-color: #ffffff; padding-top: 76px;">
+  <div style="background-color: #ffffff;">
     <!-- Who we are Section - First Section After Navbar -->
     <section 
       class="who-we-are-section" 
       :style="backgroundStyle"
     >
-      <!-- Background Image Overlay - Lighter overlay to show the background -->
-      <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255, 255, 255, 0.3); z-index: 1;"></div>
+      <!-- Background Image Overlay - Gradient from #b6edfd to transparent only in bottom 15% -->
+      <div style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(0deg, #b6edfd 0%, transparent 15%, transparent 100%); z-index: 1;"></div>
       
       <div class="container" style="position: relative; z-index: 2;">
         <div class="row justify-content-center">
@@ -282,7 +282,7 @@
       class="press-section" 
       style="
         position: relative;
-        background: linear-gradient(180deg, #0091ea 60%, #00aff0 40%);
+        background: linear-gradient(90deg, #00aff0 80%, #b6edfd 80%, #b6edfd 100%);
         padding: 6rem 0;
         display: flex;
         align-items: center;
@@ -421,14 +421,16 @@ export default {
     backgroundStyle() {
       return {
         position: 'relative',
-        minHeight: '600px',
+        height: '100vh',
+        minHeight: '100vh',
         backgroundImage: `url(${process.env.BASE_URL}background.svg)`,
-        backgroundSize: 'cover',
+        backgroundSize: '40%',
         backgroundPosition: 'center center',
         backgroundRepeat: 'no-repeat',
         display: 'flex',
         alignItems: 'center',
-        padding: '6rem 0'
+        paddingTop: '76px',
+        paddingBottom: '0'
       }
     }
   },

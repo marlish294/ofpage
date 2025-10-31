@@ -36,6 +36,7 @@
                     :src="model.photoUrl || 'https://via.placeholder.com/40x40'"
                     class="avatar me-3"
                     :alt="model.name"
+                    style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;"
                   />
                   <div class="flex-grow-1">
                     <h6 class="mb-0">{{ model.name }} {{ model.surname }}</h6>
@@ -65,6 +66,7 @@
                 :src="currentModel?.photoUrl || 'https://via.placeholder.com/40x40'"
                 class="avatar me-3"
                 :alt="currentModel?.name"
+                style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;"
               />
               <div>
                 <h5 class="mb-0">{{ currentModel?.name }} {{ currentModel?.surname }}</h5>
@@ -113,13 +115,15 @@
                   :class="message.isFromUser ? 'user' : 'model'"
                 >
                   <div class="d-flex align-items-start">
+                    <div v-if="message.isFromUser" class="avatar me-2" style="width: 30px; height: 30px; background-color: #00c78b; color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 600; font-size: 0.875rem;">
+                      {{ user?.email?.charAt(0).toUpperCase() || 'U' }}
+                    </div>
                     <img
-                      :src="message.isFromUser 
-                        ? 'https://via.placeholder.com/30x30' 
-                        : (currentModel?.photoUrl || 'https://via.placeholder.com/30x30')"
+                      v-else
+                      :src="currentModel?.photoUrl || 'https://via.placeholder.com/30x30'"
                       class="avatar me-2"
-                      style="width: 30px; height: 30px;"
-                      :alt="message.isFromUser ? 'You' : currentModel?.name"
+                      :alt="currentModel?.name"
+                      style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover;"
                     />
                     <div class="flex-grow-1">
                       <div class="d-flex justify-content-between align-items-center mb-1">
