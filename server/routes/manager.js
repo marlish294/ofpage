@@ -804,20 +804,16 @@ router.get('/dashboard', async (req, res) => {
             }
         });
 
-        // Get total revenue
+        // Get total revenue based on immutable amountPaid
         const subscriptions = await prisma.subscription.findMany({
             where: {
                 modelId: manager.model.id,
                 isActive: true
             },
-            include: {
-                plan: {
-                    select: { price: true }
-                }
-            }
+            select: { amountPaid: true }
         });
 
-        const totalRevenue = subscriptions.reduce((sum, sub) => sum + sub.plan.price, 0);
+        const totalRevenue = subscriptions.reduce((sum, sub) => sum + (sub.amountPaid || 0), 0);
 
         // Get recent subscriptions (last 30 days)
         const thirtyDaysAgo = new Date();

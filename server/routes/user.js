@@ -473,6 +473,7 @@ router.post('/subscribe', async (req, res) => {
                 userId: req.user.id,
                 modelId,
                 planId,
+                amountPaid: plan.price,
                 endDate
             },
             include: {

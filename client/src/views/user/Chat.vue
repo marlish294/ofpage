@@ -1,12 +1,12 @@
 <template>
-  <div class="container-fluid py-4">
+  <div style="min-height: 100vh; background-color: #ffffff;" class="container-fluid py-4">
     <div class="row">
       <!-- Chat Sidebar -->
       <div class="col-lg-3">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="mb-0">
-              <i class="fas fa-comments me-2"></i>
+        <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+          <div class="card-header" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
+            <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
+              <i class="fas fa-comments me-2" style="color: #00aff0;"></i>
               My Chats
             </h5>
           </div>
@@ -57,9 +57,9 @@
           <p class="text-muted">Choose a model from the sidebar to begin your conversation</p>
         </div>
 
-        <div v-else class="card h-100">
+        <div v-else class="card h-100" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
           <!-- Chat Header -->
-          <div class="card-header d-flex justify-content-between align-items-center">
+          <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
             <div class="d-flex align-items-center">
               <img
                 :src="currentModel?.photoUrl || 'https://via.placeholder.com/40x40'"
@@ -75,8 +75,11 @@
               </div>
             </div>
             <button
-              class="btn btn-outline-secondary btn-sm"
+              class="btn btn-sm"
               @click="goBack"
+              style="background-color: transparent; border: 2px solid #e0e0e0; color: #666666; font-weight: 600; border-radius: 8px; padding: 0.5rem 1rem; transition: all 0.2s ease;"
+              @mouseover="e => { e.target.style.borderColor = '#00aff0'; e.target.style.color = '#00aff0'; }"
+              @mouseout="e => { e.target.style.borderColor = '#e0e0e0'; e.target.style.color = '#666666'; }"
             >
               <i class="fas fa-arrow-left me-1"></i>
               Back
@@ -147,10 +150,13 @@
               />
               <button
                 type="submit"
-                class="btn btn-primary"
+                class="btn"
                 :disabled="!newMessage.trim() || sending"
+                :style="{ 'background-color': '#00aff0', 'border-color': '#00aff0', 'color': '#ffffff', 'font-weight': '600', 'border-radius': '8px', 'padding': '0.75rem 1.5rem', 'transition': 'all 0.2s ease', 'opacity': (!newMessage.trim() || sending) ? 0.5 : 1 }"
+                @mouseover="e => { if(newMessage.trim() && !sending) e.target.style.backgroundColor = '#0091ea'; }"
+                @mouseout="e => { if(newMessage.trim() && !sending) e.target.style.backgroundColor = '#00aff0'; }"
               >
-                <span v-if="sending" class="spinner-border spinner-border-sm me-1"></span>
+                <span v-if="sending" class="spinner-border spinner-border-sm me-1" style="width: 1rem; height: 1rem; border-width: 2px;"></span>
                 <i v-else class="fas fa-paper-plane"></i>
               </button>
             </form>

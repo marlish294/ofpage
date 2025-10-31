@@ -1,50 +1,52 @@
 <template>
-  <div class="container-fluid py-4">
-    <div class="row mb-4">
-      <div class="col-12">
-        <h2>
-          <i class="fas fa-crown me-2"></i>
-          Admin Dashboard
-        </h2>
-        <p class="text-muted">Platform overview and management</p>
+  <div style="min-height: 100vh; background-color: #ffffff;" class="container-fluid py-4">
+    <div class="container">
+      <div class="row mb-4">
+        <div class="col-12">
+          <h2 style="color: #1a1a1a; font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">
+            <i class="fas fa-crown me-2" style="color: #00aff0;"></i>
+            Admin Dashboard
+          </h2>
+          <p style="color: #666666; font-size: 1rem; margin-bottom: 2rem;">Platform overview and management</p>
+        </div>
       </div>
     </div>
 
     <!-- Stats Cards -->
     <div class="row mb-4">
       <div class="col-lg-3 col-md-6 mb-3">
-        <div class="card stats-card">
+        <div class="card stats-card" style="border: 2px solid #e0e0e0; border-radius: 12px; transition: all 0.2s ease;" @mouseover="e => { e.currentTarget.style.borderColor = '#00aff0'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 175, 240, 0.15)'; }" @mouseout="e => { e.currentTarget.style.borderColor = '#e0e0e0'; e.currentTarget.style.boxShadow = 'none'; }">
           <div class="card-body text-center">
-            <i class="fas fa-dollar-sign fa-2x mb-2"></i>
-            <h3 class="mb-1">${{ (stats.totalRevenue || 0).toFixed(2) }}</h3>
-            <p class="mb-0">Total Revenue</p>
+            <i class="fas fa-dollar-sign fa-2x mb-2" style="color: #00aff0;"></i>
+            <h3 class="mb-1" style="color: #1a1a1a; font-weight: 700;">${{ (stats.totalRevenue || 0).toFixed(2) }}</h3>
+            <p class="mb-0" style="color: #666666; margin: 0;">Total Revenue</p>
           </div>
         </div>
       </div>
       <div class="col-lg-3 col-md-6 mb-3">
-        <div class="card stats-card">
+        <div class="card stats-card" style="border: 2px solid #e0e0e0; border-radius: 12px; transition: all 0.2s ease;" @mouseover="e => { e.currentTarget.style.borderColor = '#00aff0'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 175, 240, 0.15)'; }" @mouseout="e => { e.currentTarget.style.borderColor = '#e0e0e0'; e.currentTarget.style.boxShadow = 'none'; }">
           <div class="card-body text-center">
-            <i class="fas fa-users fa-2x mb-2"></i>
-            <h3 class="mb-1">{{ stats.totalSubscribers || 0 }}</h3>
-            <p class="mb-0">Total Subscribers</p>
+            <i class="fas fa-users fa-2x mb-2" style="color: #00aff0;"></i>
+            <h3 class="mb-1" style="color: #1a1a1a; font-weight: 700;">{{ stats.totalSubscribers || 0 }}</h3>
+            <p class="mb-0" style="color: #666666; margin: 0;">Total Subscribers</p>
           </div>
         </div>
       </div>
       <div class="col-lg-3 col-md-6 mb-3">
-        <div class="card stats-card">
+        <div class="card stats-card" style="border: 2px solid #e0e0e0; border-radius: 12px; transition: all 0.2s ease;" @mouseover="e => { e.currentTarget.style.borderColor = '#00aff0'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 175, 240, 0.15)'; }" @mouseout="e => { e.currentTarget.style.borderColor = '#e0e0e0'; e.currentTarget.style.boxShadow = 'none'; }">
           <div class="card-body text-center">
-            <i class="fas fa-user-tie fa-2x mb-2"></i>
-            <h3 class="mb-1">{{ stats.totalManagers || 0 }}</h3>
-            <p class="mb-0">Active Managers</p>
+            <i class="fas fa-user-tie fa-2x mb-2" style="color: #00aff0;"></i>
+            <h3 class="mb-1" style="color: #1a1a1a; font-weight: 700;">{{ stats.totalManagers || 0 }}</h3>
+            <p class="mb-0" style="color: #666666; margin: 0;">Active Managers</p>
           </div>
         </div>
       </div>
       <div class="col-lg-3 col-md-6 mb-3">
-        <div class="card stats-card">
+        <div class="card stats-card" style="border: 2px solid #e0e0e0; border-radius: 12px; transition: all 0.2s ease;" @mouseover="e => { e.currentTarget.style.borderColor = '#00aff0'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 175, 240, 0.15)'; }" @mouseout="e => { e.currentTarget.style.borderColor = '#e0e0e0'; e.currentTarget.style.boxShadow = 'none'; }">
           <div class="card-body text-center">
-            <i class="fas fa-star fa-2x mb-2"></i>
-            <h3 class="mb-1">{{ stats.totalModels || 0 }}</h3>
-            <p class="mb-0">Active Models</p>
+            <i class="fas fa-star fa-2x mb-2" style="color: #00aff0;"></i>
+            <h3 class="mb-1" style="color: #1a1a1a; font-weight: 700;">{{ stats.totalModels || 0 }}</h3>
+            <p class="mb-0" style="color: #666666; margin: 0;">Active Models</p>
           </div>
         </div>
       </div>
@@ -53,35 +55,35 @@
     <!-- Quick Actions -->
     <div class="row mb-4">
       <div class="col-12">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="mb-0">
-              <i class="fas fa-bolt me-2"></i>
+        <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+          <div class="card-header" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
+            <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
+              <i class="fas fa-bolt me-2" style="color: #00aff0;"></i>
               Quick Actions
             </h5>
           </div>
-          <div class="card-body">
+          <div class="card-body" style="padding: 1.5rem;">
             <div class="row">
               <div class="col-md-3 mb-2">
-                <router-link to="/admin/users" class="btn btn-primary w-100">
+                <router-link to="/admin/users" class="btn w-100" style="background-color: #00aff0; border-color: #00aff0; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.75rem 1.5rem; transition: all 0.2s ease; text-decoration: none; display: block; text-align: center;" @mouseover="e => e.target.style.backgroundColor = '#0091ea'" @mouseout="e => e.target.style.backgroundColor = '#00aff0'">
                   <i class="fas fa-users me-2"></i>
                   Manage Users
                 </router-link>
               </div>
               <div class="col-md-3 mb-2">
-                <router-link to="/admin/models" class="btn btn-success w-100">
+                <router-link to="/admin/models" class="btn w-100" style="background-color: #00aff0; border-color: #00aff0; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.75rem 1.5rem; transition: all 0.2s ease; text-decoration: none; display: block; text-align: center;" @mouseover="e => e.target.style.backgroundColor = '#0091ea'" @mouseout="e => e.target.style.backgroundColor = '#00aff0'">
                   <i class="fas fa-star me-2"></i>
                   Manage Models
                 </router-link>
               </div>
               <div class="col-md-3 mb-2">
-                <router-link to="/admin/chats" class="btn btn-info w-100">
+                <router-link to="/admin/chats" class="btn w-100" style="background-color: #00aff0; border-color: #00aff0; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.75rem 1.5rem; transition: all 0.2s ease; text-decoration: none; display: block; text-align: center;" @mouseover="e => e.target.style.backgroundColor = '#0091ea'" @mouseout="e => e.target.style.backgroundColor = '#00aff0'">
                   <i class="fas fa-comments me-2"></i>
                   View Chats
                 </router-link>
               </div>
               <div class="col-md-3 mb-2">
-                <button class="btn btn-warning w-100" @click="refreshStats">
+                <button class="btn w-100" @click="refreshStats" style="background-color: #00aff0; border-color: #00aff0; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.75rem 1.5rem; transition: all 0.2s ease;" @mouseover="e => e.target.style.backgroundColor = '#0091ea'" @mouseout="e => e.target.style.backgroundColor = '#00aff0'">
                   <i class="fas fa-sync-alt me-2"></i>
                   Refresh Stats
                 </button>
@@ -95,15 +97,15 @@
     <!-- Pending Approvals -->
     <div class="row">
       <div class="col-lg-6">
-        <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-              <i class="fas fa-clock me-2"></i>
+        <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+          <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
+            <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
+              <i class="fas fa-clock me-2" style="color: #00aff0;"></i>
               Pending Manager Approvals
             </h5>
-            <span class="badge bg-warning">{{ pendingManagers.length }}</span>
+            <span class="badge" style="background-color: #F7C948; color: #1a1a1a; border-radius: 6px; padding: 0.375rem 0.75rem; font-weight: 500;">{{ pendingManagers.length }}</span>
           </div>
-          <div class="card-body">
+          <div class="card-body" style="padding: 1.5rem;">
             <div v-if="pendingManagers.length === 0" class="text-center text-muted py-3">
               <i class="fas fa-check-circle fa-2x mb-2"></i>
               <p class="mb-0">No pending approvals</p>
@@ -123,15 +125,21 @@
                 </div>
                 <div>
                   <button
-                    class="btn btn-success btn-sm me-2"
+                    class="btn btn-sm me-2"
                     @click="approveManager(manager.id)"
+                    style="background-color: #00c78b; border-color: #00c78b; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.5rem 1rem; transition: all 0.2s ease;"
+                    @mouseover="e => e.target.style.backgroundColor = '#00a675'"
+                    @mouseout="e => e.target.style.backgroundColor = '#00c78b'"
                   >
                     <i class="fas fa-check me-1"></i>
                     Approve
                   </button>
                   <button
-                    class="btn btn-danger btn-sm"
+                    class="btn btn-sm"
                     @click="rejectManager(manager.id)"
+                    style="background-color: #ff4d6d; border-color: #ff4d6d; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.5rem 1rem; transition: all 0.2s ease;"
+                    @mouseover="e => e.target.style.backgroundColor = '#ff2d55'"
+                    @mouseout="e => e.target.style.backgroundColor = '#ff4d6d'"
                   >
                     <i class="fas fa-times me-1"></i>
                     Reject
@@ -145,14 +153,14 @@
 
       <!-- Recent Activity -->
       <div class="col-lg-6">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="mb-0">
-              <i class="fas fa-chart-line me-2"></i>
+        <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+          <div class="card-header" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
+            <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
+              <i class="fas fa-chart-line me-2" style="color: #00aff0;"></i>
               Recent Activity
             </h5>
           </div>
-          <div class="card-body">
+          <div class="card-body" style="padding: 1.5rem;">
             <div class="text-center text-muted py-3">
               <i class="fas fa-chart-bar fa-2x mb-2"></i>
               <p class="mb-0">Activity tracking coming soon</p>

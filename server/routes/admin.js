@@ -72,14 +72,10 @@ router.get('/dashboard', async (req, res) => {
         // Total revenue across all managers
         const allSubscriptions = await prisma.subscription.findMany({
             where: { isActive: true },
-            include: {
-                plan: {
-                    select: { price: true }
-                }
-            }
+            select: { amountPaid: true }
         });
 
-        const totalRevenue = allSubscriptions.reduce((sum, sub) => sum + sub.plan.price, 0);
+        const totalRevenue = allSubscriptions.reduce((sum, sub) => sum + (sub.amountPaid || 0), 0);
 
         // ✅ Total subscriber count (fixed for Prisma 5+)
         const distinctSubscribers = await prisma.subscription.findMany({

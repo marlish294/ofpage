@@ -1,5 +1,5 @@
 <template>
-  <div class="container py-4">
+  <div style="min-height: 100vh; background-color: #ffffff;" class="container py-4">
     <div v-if="loading" class="text-center">
       <div class="loading">
         <div class="spinner-border text-primary" role="status">
@@ -16,7 +16,7 @@
     <div v-else-if="model" class="row">
       <!-- Model Info -->
       <div class="col-lg-8">
-        <div class="card mb-4">
+        <div class="card mb-4" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
           <div class="row g-0">
             <div class="col-md-4">
               <img
@@ -61,10 +61,10 @@
         </div>
 
         <!-- Video Preview -->
-        <div v-if="model.videoUrl" class="card mb-4">
-          <div class="card-header">
-            <h5 class="mb-0">
-              <i class="fas fa-video me-2"></i>
+        <div v-if="model.videoUrl" class="card mb-4" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+          <div class="card-header" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
+            <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
+              <i class="fas fa-video me-2" style="color: #00aff0;"></i>
               Video Preview
             </h5>
           </div>
@@ -81,10 +81,10 @@
 
       <!-- Subscription Plans -->
       <div class="col-lg-4">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="mb-0">
-              <i class="fas fa-crown me-2"></i>
+        <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+          <div class="card-header" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
+            <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
+              <i class="fas fa-crown me-2" style="color: #00aff0;"></i>
               Subscription Plans
             </h5>
           </div>
@@ -117,8 +117,11 @@
                       {{ plan.duration }} days
                     </small>
                     <button
-                      class="btn btn-primary btn-sm"
+                      class="btn btn-sm"
                       @click="subscribe(plan)"
+                      style="background-color: #00aff0; border-color: #00aff0; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.5rem 1rem; transition: all 0.2s ease;"
+                      @mouseover="e => e.target.style.backgroundColor = '#0091ea'"
+                      @mouseout="e => e.target.style.backgroundColor = '#00aff0'"
                     >
                       <i class="fas fa-credit-card me-1"></i>
                       Subscribe
@@ -218,19 +221,25 @@
           <div class="modal-footer">
             <button
               type="button"
-              class="btn btn-secondary"
+              class="btn"
               data-bs-dismiss="modal"
               @click="resetSubscription"
+              style="background-color: transparent; border: 2px solid #e0e0e0; color: #666666; font-weight: 600; border-radius: 8px; padding: 0.75rem 1.5rem; transition: all 0.2s ease;"
+              @mouseover="e => { e.target.style.borderColor = '#00aff0'; e.target.style.color = '#00aff0'; }"
+              @mouseout="e => { e.target.style.borderColor = '#e0e0e0'; e.target.style.color = '#666666'; }"
             >
               Cancel
             </button>
             <button
               type="button"
-              class="btn btn-primary"
+              class="btn"
               @click="processSubscription"
               :disabled="processing"
+              :style="{ 'background-color': '#00aff0', 'border-color': '#00aff0', 'color': '#ffffff', 'font-weight': '600', 'border-radius': '8px', 'padding': '0.75rem 1.5rem', 'transition': 'all 0.2s ease', 'opacity': processing ? 0.5 : 1 }"
+              @mouseover="e => { if(!processing) e.target.style.backgroundColor = '#0091ea'; }"
+              @mouseout="e => { if(!processing) e.target.style.backgroundColor = '#00aff0'; }"
             >
-              <span v-if="processing" class="spinner-border spinner-border-sm me-2"></span>
+              <span v-if="processing" class="spinner-border spinner-border-sm me-2" style="width: 1rem; height: 1rem; border-width: 2px;"></span>
               <i v-else class="fas fa-credit-card me-2"></i>
               {{ processing ? 'Processing...' : 'Complete Payment' }}
             </button>

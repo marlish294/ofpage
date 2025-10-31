@@ -1,22 +1,24 @@
 <template>
-  <div class="container-fluid py-4">
-    <div class="row mb-3">
-      <div class="col-12">
-        <h2>
-          <i class="fas fa-comments me-2"></i>
-          Chat Monitoring
-        </h2>
-        <p class="text-muted">Monitor all conversations (view-only)</p>
+  <div style="min-height: 100vh; background-color: #ffffff;" class="container-fluid py-4">
+    <div class="container">
+      <div class="row mb-3">
+        <div class="col-12">
+          <h2 style="color: #1a1a1a; font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">
+            <i class="fas fa-comments me-2" style="color: #00aff0;"></i>
+            Chat Monitoring
+          </h2>
+          <p style="color: #666666; font-size: 1rem; margin-bottom: 2rem;">Monitor all conversations (view-only)</p>
+        </div>
       </div>
     </div>
 
     <!-- Filter Section -->
     <div class="row mb-3">
       <div class="col-md-4">
-        <div class="card">
-          <div class="card-body">
-            <label class="form-label fw-bold">
-              <i class="fas fa-filter me-1"></i>
+        <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+          <div class="card-body" style="padding: 1.5rem;">
+            <label class="form-label" style="color: #1a1a1a; font-weight: 700; margin-bottom: 0.75rem;">
+              <i class="fas fa-filter me-1" style="color: #00aff0;"></i>
               Filter by User/Manager
             </label>
             <select 
@@ -33,10 +35,10 @@
         </div>
       </div>
       <div class="col-md-4">
-        <div class="card">
-          <div class="card-body">
-            <label class="form-label fw-bold">
-              <i class="fas fa-user-tie me-1"></i>
+        <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+          <div class="card-body" style="padding: 1.5rem;">
+            <label class="form-label" style="color: #1a1a1a; font-weight: 700; margin-bottom: 0.75rem;">
+              <i class="fas fa-user-tie me-1" style="color: #00aff0;"></i>
               Filter by Model
             </label>
             <select 
@@ -53,12 +55,15 @@
         </div>
       </div>
       <div class="col-md-4">
-        <div class="card">
-          <div class="card-body d-flex align-items-end">
+        <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+          <div class="card-body d-flex align-items-end" style="padding: 1.5rem;">
             <button 
-              class="btn btn-outline-secondary w-100" 
+              class="btn w-100" 
               @click="clearFilters"
               :disabled="!filterUserId && !filterModelId"
+              :style="{ 'background-color': 'transparent', 'border': '2px solid #e0e0e0', 'color': '#666666', 'font-weight': '600', 'border-radius': '8px', 'padding': '0.75rem 1.5rem', 'transition': 'all 0.2s ease', 'opacity': (!filterUserId && !filterModelId) ? 0.5 : 1 }"
+              @mouseover="e => { if(filterUserId || filterModelId) { e.target.style.borderColor = '#00aff0'; e.target.style.color = '#00aff0'; } }"
+              @mouseout="e => { if(filterUserId || filterModelId) { e.target.style.borderColor = '#e0e0e0'; e.target.style.color = '#666666'; } }"
             >
               <i class="fas fa-times me-1"></i>
               Clear Filters
@@ -71,13 +76,13 @@
     <div class="row">
       <!-- Chat Sidebar -->
       <div class="col-lg-3">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="mb-0">
-              <i class="fas fa-comments me-2"></i>
+        <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+          <div class="card-header" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
+            <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
+              <i class="fas fa-comments me-2" style="color: #00aff0;"></i>
               Conversations
             </h5>
-            <small class="text-muted d-block mt-1">View-only mode</small>
+            <small style="color: #8a96a3; display: block; margin-top: 0.5rem;">View-only mode</small>
           </div>
           <div class="card-body p-0">
             <div v-if="chatsLoading" class="text-center p-3">
@@ -116,7 +121,7 @@
                         class="fas me-2"
                         :class="expandedModels.includes(model.id) ? 'fa-chevron-down' : 'fa-chevron-right'"
                       ></i>
-                      <div class="avatar me-2" style="width: 35px; height: 35px; background-color: #28a745; color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                      <div class="avatar me-2" style="width: 35px; height: 35px; background-color: #00c78b; color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
                         {{ model.name.charAt(0).toUpperCase() }}
                       </div>
                       <span>{{ model.name }} {{ model.surname }}</span>
@@ -198,9 +203,9 @@
 
           <!-- Messages Area -->
           <div class="card-body flex-grow-1 d-flex flex-column p-0">
-            <div 
+            <div
               ref="messagesContainer"
-              class="messages-container flex-grow-1 p-3"
+              class="messages-container flex-grow-1 p-0"
               style="height: 500px; overflow-y: auto; background-color: #f8f9fa;"
             >
               <div v-if="messagesLoading" class="text-center py-3">
@@ -218,7 +223,7 @@
                 <div
                   v-for="message in messages"
                   :key="message.id"
-                  class="message mb-3"
+                  class="message mb-0"
                   :class="{ 'text-end': !message.isFromUser }"
                 >
                   <div
@@ -236,7 +241,7 @@
             </div>
 
             <!-- View Only Notice -->
-            <div class="border-top p-3 bg-light">
+            <div class="border-top p-0 bg-light">
               <div class="text-center text-muted">
                 <i class="fas fa-eye me-2"></i>
                 <small>View-only mode - Messages cannot be sent from admin interface</small>

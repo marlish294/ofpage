@@ -1,12 +1,12 @@
 <template>
-  <div class="container-fluid py-4">
+  <div style="min-height: 100vh; background-color: #ffffff;" class="container-fluid py-4">
     <div class="row">
       <!-- Chat Sidebar -->
       <div class="col-lg-3">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="mb-0">
-              <i class="fas fa-comments me-2"></i>
+        <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+          <div class="card-header" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
+            <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
+              <i class="fas fa-comments me-2" style="color: #00aff0;"></i>
               Subscriber Chats
             </h5>
           </div>
@@ -49,8 +49,8 @@
 
       <!-- Chat Area -->
       <div class="col-lg-9">
-        <div v-if="!currentUserId" class="card h-100">
-          <div class="card-body d-flex align-items-center justify-content-center">
+        <div v-if="!currentUserId" class="card h-100" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+          <div class="card-body d-flex align-items-center justify-content-center" style="padding: 1.5rem;">
             <div class="text-center text-muted">
               <i class="fas fa-comments fa-3x mb-3"></i>
               <h4>Select a subscriber to start chatting</h4>
@@ -59,9 +59,9 @@
           </div>
         </div>
 
-        <div v-else class="card h-100 d-flex flex-column">
+        <div v-else class="card h-100 d-flex flex-column" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
           <!-- Chat Header -->
-          <div class="card-header d-flex align-items-center">
+          <div class="card-header d-flex align-items-center" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
             <div class="avatar me-3" style="width: 40px; height: 40px; background-color: #6f42c1; color: white; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
               {{ currentUser?.email?.charAt(0).toUpperCase() }}
             </div>
@@ -76,9 +76,9 @@
 
           <!-- Messages Area -->
           <div class="card-body flex-grow-1 d-flex flex-column p-0">
-            <div 
+            <div
               ref="messagesContainer"
-              class="messages-container flex-grow-1 p-3"
+              class="messages-container flex-grow-1 p-0"
               style="height: 400px; overflow-y: auto; background-color: #f8f9fa;"
             >
               <div v-if="messagesLoading" class="text-center py-3">
@@ -96,7 +96,7 @@
                 <div
                   v-for="message in messages"
                   :key="message.id"
-                  class="message mb-3"
+                  class="message mb-0"
                   :class="{ 'text-end': !message.isFromUser }"
                 >
                   <div
@@ -114,8 +114,8 @@
             </div>
 
             <!-- Message Input -->
-            <div class="border-top p-3">
-              <form @submit.prevent="sendMessage" class="d-flex">
+            <div class="border-top p-0">
+              <form @submit.prevent="sendMessage" class="d-flex p-0 m-0">
                 <input
                   v-model="newMessage"
                   type="text"
@@ -125,7 +125,10 @@
                 />
                 <button
                   type="submit"
-                  class="btn btn-primary"
+                  class="btn"
+                  :style="{ 'background-color': '#00aff0', 'border-color': '#00aff0', 'color': '#ffffff', 'font-weight': '600', 'border-radius': '8px', 'padding': '0.75rem 1.5rem', 'transition': 'all 0.2s ease', 'opacity': (!newMessage.trim() || sending) ? 0.5 : 1 }"
+                  @mouseover="e => { if(newMessage.trim() && !sending) e.target.style.backgroundColor = '#0091ea'; }"
+                  @mouseout="e => { if(newMessage.trim() && !sending) e.target.style.backgroundColor = '#00aff0'; }"
                   :disabled="!newMessage.trim() || sending"
                 >
                   <span v-if="sending" class="spinner-border spinner-border-sm me-1"></span>

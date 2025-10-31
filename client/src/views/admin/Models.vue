@@ -1,20 +1,22 @@
 <template>
-  <div class="container-fluid py-4">
-    <div class="row mb-4">
-      <div class="col-12">
-        <h2>
-          <i class="fas fa-star me-2"></i>
-          Model Management
-        </h2>
-        <p class="text-muted">Manage models and their visibility</p>
+  <div style="min-height: 100vh; background-color: #ffffff;" class="container-fluid py-4">
+    <div class="container">
+      <div class="row mb-4">
+        <div class="col-12">
+          <h2 style="color: #1a1a1a; font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">
+            <i class="fas fa-star me-2" style="color: #00aff0;"></i>
+            Model Management
+          </h2>
+          <p style="color: #666666; font-size: 1rem; margin-bottom: 2rem;">Manage models and their visibility</p>
+        </div>
       </div>
     </div>
 
     <!-- Models Table -->
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">All Models ({{ models.length }})</h5>
-        <button class="btn btn-primary btn-sm" @click="refreshModels">
+    <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+      <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
+        <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">All Models ({{ models.length }})</h5>
+        <button class="btn btn-sm" @click="refreshModels" style="background-color: #00aff0; border-color: #00aff0; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.5rem 1rem; transition: all 0.2s ease;" @mouseover="e => e.target.style.backgroundColor = '#0091ea'" @mouseout="e => e.target.style.backgroundColor = '#00aff0'">
           <i class="fas fa-sync-alt me-1"></i>
           Refresh
         </button>

@@ -1,6 +1,6 @@
 <template>
-  <div class="container py-4">
-    <h3 class="mb-3"><i class="fas fa-user-friends me-2"></i>My Models</h3>
+  <div style="min-height: 100vh; background-color: #ffffff;" class="container py-4">
+    <h3 style="color: #1a1a1a; font-size: 2rem; font-weight: 700; margin-bottom: 2rem; max-width: 950px;"><i class="fas fa-user-friends me-2" style="color: #00aff0;"></i>My Models</h3>
 
     <div v-if="loading" class="text-center text-muted py-5">
       <span class="spinner-border spinner-border-sm me-2"></span>Loading...
@@ -11,8 +11,8 @@
         You have no active subscriptions yet.
       </div>
 
-      <div v-else class="list-group">
-        <div class="list-group-item" v-for="model in models" :key="model.id">
+      <div v-else class="list-group" style="border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);">
+        <div class="list-group-item" v-for="model in models" :key="model.id" style="border: 1px solid #e0e0e0; border-radius: 12px; margin-bottom: 1rem; padding: 1.5rem; transition: all 0.2s ease;" @mouseover="e => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 175, 240, 0.15)'" @mouseout="e => e.currentTarget.style.boxShadow = 'none'">
           <div class="d-flex justify-content-between align-items-center" @click="toggle(model.id)" style="cursor:pointer;">
             <div class="d-flex align-items-center">
               <img v-if="model.photoUrl" :src="model.photoUrl" class="rounded me-2" style="width:40px;height:40px;object-fit:cover;" />
@@ -22,8 +22,8 @@
           </div>
           <div v-show="expanded[model.id]" class="mt-3">
             <!-- Model details -->
-            <div class="card mb-3">
-              <div class="card-body">
+            <div class="card mb-3" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);">
+              <div class="card-body" style="padding: 1.5rem;">
                 <div class="d-flex align-items-start">
                   <img v-if="model.photoUrl" :src="model.photoUrl" class="rounded me-3" style="width:72px;height:72px;object-fit:cover;" />
                   <div class="flex-grow-1">

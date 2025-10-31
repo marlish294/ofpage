@@ -108,6 +108,7 @@ model Subscription {
   userId    String
   modelId   String
   planId    String
+  amountPaid Float   @default(0)
   isActive  Boolean  @default(true)
   startDate DateTime @default(now())
   endDate   DateTime

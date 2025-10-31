@@ -1,26 +1,28 @@
 <template>
-  <div class="container-fluid py-4">
-    <div class="row mb-4">
-      <div class="col-12">
-        <h2>
-          <i class="fas fa-user-edit me-2"></i>
-          Manage Model
-        </h2>
-        <p class="text-muted">Create and manage your model profile</p>
+  <div style="min-height: 100vh; background-color: #ffffff;" class="container-fluid py-4">
+    <div class="container">
+      <div class="row mb-4">
+        <div class="col-12">
+          <h2 style="color: #1a1a1a; font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">
+            <i class="fas fa-user-edit me-2" style="color: #00aff0;"></i>
+            Manage Model
+          </h2>
+          <p style="color: #666666; font-size: 1rem; margin-bottom: 2rem;">Create and manage your model profile</p>
+        </div>
       </div>
     </div>
 
     <div class="row">
       <div class="col-lg-8">
         <!-- Model Form -->
-        <div class="card">
-          <div class="card-header">
-            <h5 class="mb-0">
-              <i class="fas fa-user me-2"></i>
+        <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+          <div class="card-header" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
+            <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
+              <i class="fas fa-user me-2" style="color: #00aff0;"></i>
               Model Information
             </h5>
           </div>
-          <div class="card-body">
+          <div class="card-body" style="padding: 1.5rem;">
             <form @submit.prevent="saveModel">
               <div class="row">
                 <div class="col-md-6">
@@ -167,12 +169,12 @@
 
 
               <div class="d-flex justify-content-between">
-                <button type="button" class="btn btn-secondary" @click="resetForm">
+                <button type="button" class="btn" @click="resetForm" style="background-color: transparent; border: 2px solid #e0e0e0; color: #666666; font-weight: 600; border-radius: 8px; padding: 0.75rem 1.5rem; transition: all 0.2s ease;" @mouseover="e => { e.target.style.borderColor = '#00aff0'; e.target.style.color = '#00aff0'; }" @mouseout="e => { e.target.style.borderColor = '#e0e0e0'; e.target.style.color = '#666666'; }">
                   <i class="fas fa-undo me-1"></i>
                   Reset
                 </button>
-                <button type="submit" class="btn btn-primary" :disabled="saving">
-                  <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>
+                <button type="submit" class="btn" :disabled="saving" :style="{ 'background-color': '#00aff0', 'border-color': '#00aff0', 'color': '#ffffff', 'font-weight': '600', 'border-radius': '8px', 'padding': '0.75rem 1.5rem', 'transition': 'all 0.2s ease', 'opacity': saving ? 0.5 : 1 }" @mouseover="e => { if(!saving) e.target.style.backgroundColor = '#0091ea'; }" @mouseout="e => { if(!saving) e.target.style.backgroundColor = '#00aff0'; }">
+                  <span v-if="saving" class="spinner-border spinner-border-sm me-1" style="width: 1rem; height: 1rem; border-width: 2px;"></span>
                   <i v-else class="fas fa-save me-1"></i>
                   {{ saving ? 'Saving...' : 'Save Model' }}
                 </button>
@@ -184,22 +186,25 @@
 
       <!-- Plans Management -->
       <div class="col-lg-4">
-        <div class="card">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">
-              <i class="fas fa-crown me-2"></i>
+        <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+          <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
+            <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
+              <i class="fas fa-crown me-2" style="color: #00aff0;"></i>
               Subscription Plans
             </h5>
             <button
-              class="btn btn-sm btn-primary"
+              class="btn btn-sm"
               @click="showAddPlanModal"
               :disabled="plans.length >= 4"
+              :style="{ 'background-color': '#00aff0', 'border-color': '#00aff0', 'color': '#ffffff', 'font-weight': '600', 'border-radius': '8px', 'padding': '0.5rem 1rem', 'transition': 'all 0.2s ease', 'opacity': plans.length >= 4 ? 0.5 : 1 }"
+              @mouseover="e => { if(plans.length < 4) e.target.style.backgroundColor = '#0091ea'; }"
+              @mouseout="e => { if(plans.length < 4) e.target.style.backgroundColor = '#00aff0'; }"
             >
               <i class="fas fa-plus me-1"></i>
               Add Plan
             </button>
           </div>
-          <div class="card-body">
+          <div class="card-body" style="padding: 1.5rem;">
             <div v-if="plans.length === 0" class="text-center text-muted py-3">
               <i class="fas fa-crown fa-2x mb-2"></i>
               <p class="mb-0">No plans created yet</p>
@@ -217,12 +222,16 @@
                     <h6 class="card-title mb-0">{{ plan.name }}</h6>
                     <div>
                       <button
-                        class="btn btn-sm btn-outline-secondary"
+                        class="btn btn-sm"
                         type="button"
                         @click="startEditPlan(plan)"
-                        title="Edit plan"
+                        :title="planEditOpen[plan.id] ? 'Close' : 'Edit plan'"
+                        :style="planEditOpen[plan.id] ? { 'background-color': '#00aff0', 'border-color': '#00aff0', 'color': '#ffffff' } : { 'background-color': 'transparent', 'border': '2px solid #e0e0e0', 'color': '#666666' }"
+                        style="font-weight: 600; border-radius: 8px; padding: 0.5rem 0.75rem; transition: all 0.2s ease;"
+                        @mouseover="e => { if(!planEditOpen[plan.id]) { e.target.style.borderColor = '#00aff0'; e.target.style.color = '#00aff0'; } }"
+                        @mouseout="e => { if(!planEditOpen[plan.id]) { e.target.style.borderColor = '#e0e0e0'; e.target.style.color = '#666666'; } }"
                       >
-                        <i class="fas fa-ellipsis-v"></i>
+                        <i :class="planEditOpen[plan.id] ? 'fas fa-times' : 'fas fa-ellipsis-v'"></i>
                       </button>
                     </div>
                   </div>
@@ -265,7 +274,7 @@
                       <button class="btn btn-outline-info btn-sm" @click="togglePlanMedia(plan.id)">
                         <i class="fas fa-images me-1"></i> Manage Media
                       </button>
-                    </div>
+                     </div>
                   </div>
 
                   <!-- Media management content -->
@@ -1201,18 +1210,31 @@ export default {
     },
 
     startEditPlan(plan) {
-      this.planEdit = {
-        ...this.planEdit,
-        [plan.id]: {
-          id: plan.id,
-          name: plan.name,
-          description: plan.description,
-          price: plan.price,
-          duration: plan.duration,
-          isActive: plan.isActive !== undefined ? plan.isActive : true
+      // Toggle the plan edit section
+      const isCurrentlyOpen = this.planEditOpen[plan.id]
+      
+      if (!isCurrentlyOpen) {
+        // Opening - initialize the edit form
+        this.planEdit = {
+          ...this.planEdit,
+          [plan.id]: {
+            id: plan.id,
+            name: plan.name,
+            description: plan.description,
+            price: plan.price,
+            duration: plan.duration,
+            isActive: plan.isActive !== undefined ? plan.isActive : true
+          }
         }
       }
-      this.planEditOpen = { ...this.planEditOpen, [plan.id]: true }
+      
+      // Toggle the open state
+      this.planEditOpen = { ...this.planEditOpen, [plan.id]: !isCurrentlyOpen }
+      
+      // If closing, also close the media section if it's open
+      if (isCurrentlyOpen && this.planMediaExpanded[plan.id]) {
+        this.planMediaExpanded = { ...this.planMediaExpanded, [plan.id]: false }
+      }
     },
 
     cancelEditPlan(planId) {

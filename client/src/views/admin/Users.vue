@@ -1,51 +1,69 @@
 <template>
-  <div class="container-fluid py-4">
-    <div class="row mb-4">
-      <div class="col-12">
-        <h2>
-          <i class="fas fa-users me-2"></i>
-          User Management
-        </h2>
-        <p class="text-muted">Manage users, managers, and permissions</p>
+  <div style="min-height: 100vh; background-color: #ffffff;" class="container-fluid py-4">
+    <div class="container">
+      <div class="row mb-4">
+        <div class="col-12">
+          <h2 style="color: #1a1a1a; font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem;">
+            <i class="fas fa-users me-2" style="color: #00aff0;"></i>
+            User Management
+          </h2>
+          <p style="color: #666666; font-size: 1rem; margin-bottom: 2rem;">Manage users, managers, and permissions</p>
+        </div>
       </div>
     </div>
 
     <!-- Filters -->
     <div class="row mb-4">
       <div class="col-md-6">
-        <div class="card">
-          <div class="card-body">
-            <h6 class="card-title">Filter by Role</h6>
+        <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+          <div class="card-body" style="padding: 1.5rem;">
+            <h6 class="card-title" style="color: #1a1a1a; font-weight: 700; margin-bottom: 1rem;">Filter by Role</h6>
             <div class="btn-group" role="group">
               <button
                 type="button"
-                class="btn btn-outline-primary"
+                class="btn"
                 :class="{ active: selectedRole === '' }"
                 @click="filterByRole('')"
+                :style="selectedRole === '' ? 'background-color: #00aff0; border-color: #00aff0; color: #ffffff;' : 'background-color: transparent; border: 2px solid #00aff0; color: #00aff0;'"
+                style="font-weight: 600; border-radius: 8px; padding: 0.5rem 1rem; transition: all 0.2s ease;"
+                @mouseover="e => { if(selectedRole !== '') { e.target.style.backgroundColor = '#00aff0'; e.target.style.color = '#ffffff'; } }"
+                @mouseout="e => { if(selectedRole !== '') { e.target.style.backgroundColor = 'transparent'; e.target.style.color = '#00aff0'; } }"
               >
                 All
               </button>
               <button
                 type="button"
-                class="btn btn-outline-success"
+                class="btn"
                 :class="{ active: selectedRole === 'USER' }"
                 @click="filterByRole('USER')"
+                :style="selectedRole === 'USER' ? 'background-color: #00aff0; border-color: #00aff0; color: #ffffff;' : 'background-color: transparent; border: 2px solid #00aff0; color: #00aff0;'"
+                style="font-weight: 600; border-radius: 8px; padding: 0.5rem 1rem; transition: all 0.2s ease;"
+                @mouseover="e => { if(selectedRole !== 'USER') { e.target.style.backgroundColor = '#00aff0'; e.target.style.color = '#ffffff'; } }"
+                @mouseout="e => { if(selectedRole !== 'USER') { e.target.style.backgroundColor = 'transparent'; e.target.style.color = '#00aff0'; } }"
               >
                 Users
               </button>
               <button
                 type="button"
-                class="btn btn-outline-warning"
+                class="btn"
                 :class="{ active: selectedRole === 'MANAGER' }"
                 @click="filterByRole('MANAGER')"
+                :style="selectedRole === 'MANAGER' ? 'background-color: #00aff0; border-color: #00aff0; color: #ffffff;' : 'background-color: transparent; border: 2px solid #00aff0; color: #00aff0;'"
+                style="font-weight: 600; border-radius: 8px; padding: 0.5rem 1rem; transition: all 0.2s ease;"
+                @mouseover="e => { if(selectedRole !== 'MANAGER') { e.target.style.backgroundColor = '#00aff0'; e.target.style.color = '#ffffff'; } }"
+                @mouseout="e => { if(selectedRole !== 'MANAGER') { e.target.style.backgroundColor = 'transparent'; e.target.style.color = '#00aff0'; } }"
               >
                 Managers
               </button>
               <button
                 type="button"
-                class="btn btn-outline-danger"
+                class="btn"
                 :class="{ active: selectedRole === 'ADMIN' }"
                 @click="filterByRole('ADMIN')"
+                :style="selectedRole === 'ADMIN' ? 'background-color: #00aff0; border-color: #00aff0; color: #ffffff;' : 'background-color: transparent; border: 2px solid #00aff0; color: #00aff0;'"
+                style="font-weight: 600; border-radius: 8px; padding: 0.5rem 1rem; transition: all 0.2s ease;"
+                @mouseover="e => { if(selectedRole !== 'ADMIN') { e.target.style.backgroundColor = '#00aff0'; e.target.style.color = '#ffffff'; } }"
+                @mouseout="e => { if(selectedRole !== 'ADMIN') { e.target.style.backgroundColor = 'transparent'; e.target.style.color = '#00aff0'; } }"
               >
                 Admins
               </button>
@@ -56,10 +74,10 @@
     </div>
 
     <!-- Users Table -->
-    <div class="card">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">All Users ({{ pagination.total }})</h5>
-        <button class="btn btn-primary btn-sm" @click="refreshUsers">
+    <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+      <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
+        <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">All Users ({{ pagination.total }})</h5>
+        <button class="btn btn-sm" @click="refreshUsers" style="background-color: #00aff0; border-color: #00aff0; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.5rem 1rem; transition: all 0.2s ease;" @mouseover="e => e.target.style.backgroundColor = '#0091ea'" @mouseout="e => e.target.style.backgroundColor = '#00aff0'">
           <i class="fas fa-sync-alt me-1"></i>
           Refresh
         </button>

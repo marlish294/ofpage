@@ -1,12 +1,12 @@
 <template>
-  <div class="container-fluid py-4">
+  <div style="min-height: 100vh; background-color: #ffffff;" class="container-fluid py-4">
     <div class="row">
       <!-- Sidebar -->
       <div class="col-lg-3">
-        <div class="card">
-          <div class="card-header">
-            <h5 class="mb-0">
-              <i class="fas fa-user me-2"></i>
+        <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+          <div class="card-header" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
+            <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
+              <i class="fas fa-user me-2" style="color: #00aff0;"></i>
               My Subscriptions
             </h5>
           </div>
@@ -48,10 +48,10 @@
           </div>
         </div>
 
-        <div class="card mt-3">
-          <div class="card-header">
-            <h6 class="mb-0">
-              <i class="fas fa-chart-line me-2"></i>
+        <div class="card mt-3" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+          <div class="card-header" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
+            <h6 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
+              <i class="fas fa-chart-line me-2" style="color: #00aff0;"></i>
               Quick Stats
             </h6>
           </div>
@@ -72,18 +72,18 @@
       <div class="col-lg-9">
         <div class="row mb-4">
           <div class="col-12">
-            <h2>
-              <i class="fas fa-home me-2"></i>
+            <h2 style="color: #1a1a1a; font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; max-width: 950px;">
+              <i class="fas fa-home me-2" style="color: #00aff0;"></i>
               Welcome back, {{ user?.email }}!
             </h2>
-            <p class="text-muted">Here's what's happening with your subscriptions</p>
+            <p style="color: #666666; font-size: 1rem; margin-bottom: 2rem; max-width: 950px;">Here's what's happening with your subscriptions</p>
           </div>
         </div>
 
         <!-- Featured Models -->
         <div class="row">
           <div class="col-12">
-            <h4 class="mb-3">
+            <h4 class="mb-3" style="max-width: 950px;">
               <i class="fas fa-star me-2"></i>
               Featured Models
             </h4>
@@ -106,7 +106,7 @@
             :key="model.id"
             class="col-lg-4 col-md-6 mb-4"
           >
-            <div class="card model-card h-100" @click="viewModel(model.id)">
+            <div class="card model-card h-100" @click="viewModel(model.id)" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); cursor: pointer; transition: all 0.2s ease;" @mouseover="e => { e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 175, 240, 0.15)'; e.currentTarget.style.transform = 'translateY(-2px)'; }" @mouseout="e => { e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.04)'; e.currentTarget.style.transform = 'translateY(0)'; }">
               <div class="position-relative">
                 <img
                   :src="model.photoUrl || 'https://via.placeholder.com/400x300'"
@@ -115,7 +115,7 @@
                   style="height: 200px; object-fit: cover;"
                 />
                 <div v-if="isSubscribed(model.id)" class="position-absolute top-0 end-0 m-2">
-                  <span class="badge bg-success">
+                  <span class="badge" style="background-color: #00c78b; color: #ffffff; border-radius: 6px; padding: 0.375rem 0.75rem; font-weight: 500;">
                     <i class="fas fa-check-circle me-1"></i>
                     Subscribed
                   </span>
@@ -138,15 +138,18 @@
                     <small class="text-muted">
                       {{ model.plans.length }} plans
                     </small>
-                    <small class="text-success fw-bold">
+                    <small style="color: #00aff0; font-weight: 700;">
                       From ${{ Math.min(...model.plans.map(p => p.price)) }}/month
                     </small>
                   </div>
                   
                   <button
                     v-if="!isSubscribed(model.id)"
-                    class="btn btn-primary btn-sm w-100"
+                    class="btn btn-sm w-100"
                     @click.stop="viewModel(model.id)"
+                    style="background-color: #00aff0; border-color: #00aff0; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.625rem 1rem; transition: all 0.2s ease;"
+                    @mouseover="e => e.target.style.backgroundColor = '#0091ea'"
+                    @mouseout="e => e.target.style.backgroundColor = '#00aff0'"
                   >
                     <i class="fas fa-eye me-1"></i>
                     View Profile
@@ -154,8 +157,11 @@
                   
                   <button
                     v-else
-                    class="btn btn-success btn-sm w-100"
+                    class="btn btn-sm w-100"
                     @click.stop="openChat(model.id)"
+                    style="background-color: #00aff0; border-color: #00aff0; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.625rem 1rem; transition: all 0.2s ease;"
+                    @mouseover="e => e.target.style.backgroundColor = '#0091ea'"
+                    @mouseout="e => e.target.style.backgroundColor = '#00aff0'"
                   >
                     <i class="fas fa-comments me-1"></i>
                     Open Chat
@@ -169,8 +175,8 @@
         <div v-if="!modelsLoading && models.length === 0" class="row">
           <div class="col-12 text-center py-5">
             <i class="fas fa-users fa-3x text-muted mb-3"></i>
-            <h4 class="text-muted">No models available</h4>
-            <p class="text-muted">Check back later for new models!</p>
+            <h4 class="text-muted" style="max-width: 950px;">No models available</h4>
+            <p class="text-muted" style="max-width: 950px;">Check back later for new models!</p>
           </div>
         </div>
       </div>
