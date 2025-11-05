@@ -87,6 +87,37 @@ const initializeSocketIO = (socketIO) => {
                         socket.emit('joined_chat', { modelId });
                     }
                 } else if (socket.userRole === 'USER') {
+                    // Check if user is blocked by the model's manager
+                    const model = await prisma.model.findUnique({
+                        where: { id: modelId },
+                        include: {
+                            manager: {
+                                include: {
+                                    user: {
+                                        select: { id: true }
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    if (model && model.manager) {
+                        const managerUserId = model.manager.user.id;
+                        const blockRecord = await prisma.blockedUser.findUnique({
+                            where: {
+                                blockedById_blockedUserId: {
+                                    blockedById: managerUserId,
+                                    blockedUserId: socket.userId
+                                }
+                            }
+                        });
+
+                        if (blockRecord) {
+                            socket.emit('error', { message: 'You are blocked from accessing this model' });
+                            return;
+                        }
+                    }
+
                     // User joins their own chat room with model
                     const subscription = await prisma.subscription.findFirst({
                         where: {
@@ -180,7 +211,39 @@ const initializeSocketIO = (socketIO) => {
                         return;
                     }
                 } else {
-                    // Regular user sending message
+                    // Regular user sending message - check if blocked
+                    if (socket.userRole === 'USER') {
+                        const model = await prisma.model.findUnique({
+                            where: { id: modelId },
+                            include: {
+                                manager: {
+                                    include: {
+                                        user: {
+                                            select: { id: true }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+
+                        if (model && model.manager) {
+                            const managerUserId = model.manager.user.id;
+                            const blockRecord = await prisma.blockedUser.findUnique({
+                                where: {
+                                    blockedById_blockedUserId: {
+                                        blockedById: managerUserId,
+                                        blockedUserId: socket.userId
+                                    }
+                                }
+                            });
+
+                            if (blockRecord) {
+                                socket.emit('error', { message: 'You are blocked from messaging this model' });
+                                return;
+                            }
+                        }
+                    }
+
                     const subscription = await prisma.subscription.findFirst({
                         where: {
                             userId: socket.userId,
@@ -273,7 +336,39 @@ const initializeSocketIO = (socketIO) => {
                         }
                     });
                 } else {
-                    // Regular user gets their own chat
+                    // Regular user gets their own chat - check if blocked
+                    if (socket.userRole === 'USER') {
+                        const model = await prisma.model.findUnique({
+                            where: { id: modelId },
+                            include: {
+                                manager: {
+                                    include: {
+                                        user: {
+                                            select: { id: true }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+
+                        if (model && model.manager) {
+                            const managerUserId = model.manager.user.id;
+                            const blockRecord = await prisma.blockedUser.findUnique({
+                                where: {
+                                    blockedById_blockedUserId: {
+                                        blockedById: managerUserId,
+                                        blockedUserId: socket.userId
+                                    }
+                                }
+                            });
+
+                            if (blockRecord) {
+                                socket.emit('error', { message: 'You are blocked from accessing this model' });
+                                return;
+                            }
+                        }
+                    }
+
                     const subscription = await prisma.subscription.findFirst({
                         where: {
                             userId: socket.userId,

@@ -418,12 +418,62 @@ router.get('/subscriptions', async (req, res) => {
             orderBy: { createdAt: 'desc' }
         });
 
-        res.json({ subscriptions });
+        // Filter out subscriptions to models where user is blocked
+        const filteredSubscriptions = [];
+        for (const sub of subscriptions) {
+            if (!sub.model) continue;
+            const isBlocked = await isUserBlockedByModel(req.user.id, sub.model.id);
+            if (!isBlocked) {
+                filteredSubscriptions.push(sub);
+            }
+        }
+
+        res.json({ subscriptions: filteredSubscriptions });
     } catch (error) {
         console.error('Get subscriptions error:', error);
         res.status(500).json({ message: 'Failed to fetch subscriptions' });
     }
 });
+
+// ======================================================
+// Helper function to check if user is blocked by model's manager
+// ======================================================
+async function isUserBlockedByModel(userId, modelId) {
+    try {
+        const model = await prisma.model.findUnique({
+            where: { id: modelId },
+            include: {
+                manager: {
+                    include: {
+                        user: {
+                            select: { id: true }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!model || !model.manager) {
+            return false;
+        }
+
+        const managerUserId = model.manager.user.id;
+
+        const blockRecord = await prisma.blockedUser.findUnique({
+            where: {
+                blockedById_blockedUserId: {
+                    blockedById: managerUserId,
+                    blockedUserId: userId
+                }
+            }
+        });
+
+        return !!blockRecord;
+    } catch (error) {
+        console.error('Error checking block status:', error);
+        return false;
+    }
+}
 
 // ======================================================
 // 💳 Subscribe to a model
@@ -434,6 +484,12 @@ router.post('/subscribe', async (req, res) => {
 
         if (!modelId || !planId) {
             return res.status(400).json({ message: 'Model ID and Plan ID are required' });
+        }
+
+        // Check if user is blocked by the model's manager
+        const isBlocked = await isUserBlockedByModel(req.user.id, modelId);
+        if (isBlocked) {
+            return res.status(403).json({ message: 'You are blocked from subscribing to this model' });
         }
 
         // Optional: prevent duplicate subscription to the exact same plan
@@ -595,12 +651,17 @@ router.get('/chat-models', async (req, res) => {
             orderBy: { createdAt: 'desc' }
         });
 
-        // Deduplicate by model.id to ensure only one chat per model
+        // Deduplicate by model.id and filter out blocked models
         const seenModelIds = new Set();
         const chatModels = [];
         for (const sub of subscriptions) {
             if (!sub.model) continue;
             if (seenModelIds.has(sub.model.id)) continue;
+
+            // Check if user is blocked by this model's manager
+            const isBlocked = await isUserBlockedByModel(req.user.id, sub.model.id);
+            if (isBlocked) continue; // Skip blocked models
+
             seenModelIds.add(sub.model.id);
             chatModels.push({
                 id: sub.model.id,
@@ -624,6 +685,12 @@ router.get('/chats/:modelId', async (req, res) => {
     try {
         const { modelId } = req.params;
         const { limit = 50, offset = 0 } = req.query;
+
+        // Check if user is blocked by the model's manager
+        const isBlocked = await isUserBlockedByModel(req.user.id, modelId);
+        if (isBlocked) {
+            return res.status(403).json({ message: 'You are blocked from accessing this model' });
+        }
 
         const subscription = await prisma.subscription.findFirst({
             where: {
@@ -679,6 +746,12 @@ router.post('/messages', async (req, res) => {
 
         if (!modelId || !content) {
             return res.status(400).json({ message: 'Model ID and content are required' });
+        }
+
+        // Check if user is blocked by the model's manager
+        const isBlocked = await isUserBlockedByModel(req.user.id, modelId);
+        if (isBlocked) {
+            return res.status(403).json({ message: 'You are blocked from messaging this model' });
         }
 
         // Verify subscription
@@ -747,6 +820,12 @@ router.get('/plans/:planId/media', async (req, res) => {
             return res.status(404).json({ message: 'Plan not found' });
         }
 
+        // Check if user is blocked by the model's manager
+        const isBlocked = await isUserBlockedByModel(req.user.id, plan.model.id);
+        if (isBlocked) {
+            return res.status(404).json({ message: 'Plan not found' });
+        }
+
         // Verify user has an active subscription for this plan
         const activeSubscription = await prisma.subscription.findFirst({
             where: {
@@ -779,6 +858,12 @@ router.get('/plans/:planId/media', async (req, res) => {
 router.get('/models/:modelId/media', async (req, res) => {
     try {
         const { modelId } = req.params;
+
+        // Check if user is blocked by the model's manager
+        const isBlocked = await isUserBlockedByModel(req.user.id, modelId);
+        if (isBlocked) {
+            return res.status(404).json({ message: 'Model not found' });
+        }
 
         // Ensure model exists and is active
         const model = await prisma.model.findFirst({ where: { id: modelId, isActive: true } });

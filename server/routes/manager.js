@@ -855,7 +855,7 @@ router.get('/subscribers', async (req, res) => {
             return res.status(404).json({ message: 'Model not found' });
         }
 
-        const subscribers = await prisma.subscription.findMany({
+        const subscriptions = await prisma.subscription.findMany({
             where: {
                 modelId: manager.model.id,
                 isActive: true
@@ -876,11 +876,127 @@ router.get('/subscribers', async (req, res) => {
             orderBy: { createdAt: 'desc' }
         });
 
+        // Get all blocked users by this manager
+        const blockedUsers = await prisma.blockedUser.findMany({
+            where: {
+                blockedById: req.user.id
+            },
+            select: {
+                blockedUserId: true
+            }
+        });
+
+        const blockedUserIds = new Set(blockedUsers.map(bu => bu.blockedUserId));
+
+        // Add block status to each subscriber
+        const subscribers = subscriptions.map(sub => ({
+            ...sub,
+            isBlocked: blockedUserIds.has(sub.userId)
+        }));
+
         res.json({ subscribers });
 
     } catch (error) {
         console.error('Get subscribers error:', error);
         res.status(500).json({ message: 'Failed to fetch subscribers' });
+    }
+});
+
+// Block a subscriber
+router.post('/subscribers/:userId/block', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const manager = await prisma.manager.findUnique({
+            where: { userId: req.user.id },
+            include: { model: true }
+        });
+
+        if (!manager || !manager.model) {
+            return res.status(404).json({ message: 'Model not found' });
+        }
+
+        // Verify the user is actually a subscriber
+        const subscription = await prisma.subscription.findFirst({
+            where: {
+                userId: userId,
+                modelId: manager.model.id,
+                isActive: true
+            }
+        });
+
+        if (!subscription) {
+            return res.status(404).json({ message: 'Subscriber not found' });
+        }
+
+        // Check if already blocked
+        const existingBlock = await prisma.blockedUser.findUnique({
+            where: {
+                blockedById_blockedUserId: {
+                    blockedById: req.user.id,
+                    blockedUserId: userId
+                }
+            }
+        });
+
+        if (existingBlock) {
+            return res.status(400).json({ message: 'User is already blocked' });
+        }
+
+        // Block the user
+        await prisma.blockedUser.create({
+            data: {
+                blockedById: req.user.id,
+                blockedUserId: userId
+            }
+        });
+
+        res.json({ message: 'User blocked successfully' });
+
+    } catch (error) {
+        console.error('Block subscriber error:', error);
+        res.status(500).json({ message: 'Failed to block subscriber' });
+    }
+});
+
+// Unblock a subscriber
+router.post('/subscribers/:userId/unblock', async (req, res) => {
+    try {
+        const { userId } = req.params;
+        const manager = await prisma.manager.findUnique({
+            where: { userId: req.user.id },
+            include: { model: true }
+        });
+
+        if (!manager || !manager.model) {
+            return res.status(404).json({ message: 'Model not found' });
+        }
+
+        // Check if user is blocked
+        const blockRecord = await prisma.blockedUser.findUnique({
+            where: {
+                blockedById_blockedUserId: {
+                    blockedById: req.user.id,
+                    blockedUserId: userId
+                }
+            }
+        });
+
+        if (!blockRecord) {
+            return res.status(404).json({ message: 'User is not blocked' });
+        }
+
+        // Unblock the user
+        await prisma.blockedUser.delete({
+            where: {
+                id: blockRecord.id
+            }
+        });
+
+        res.json({ message: 'User unblocked successfully' });
+
+    } catch (error) {
+        console.error('Unblock subscriber error:', error);
+        res.status(500).json({ message: 'Failed to unblock subscriber' });
     }
 });
 

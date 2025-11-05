@@ -25,6 +25,7 @@
       </button>
 
       <div class="collapse navbar-collapse" id="navbarNav">
+        <!-- Home - Left Side -->
         <ul class="navbar-nav me-auto">
           <li class="nav-item">
             <button class="nav-link btn btn-link" @click="goToHome" style="color: #00aff0 !important; text-decoration: none; border: none; background: none; padding: 0.5rem 1rem;">
@@ -32,8 +33,25 @@
               Home
             </button>
           </li>
-          
+        </ul>
 
+        <!-- All Other Menus - Right Side -->
+        <ul class="navbar-nav ms-auto">
+          <!-- Creators Link - On public pages (right side) -->
+          <li v-if="showCreatorsLinkOnPublicPages" class="nav-item">
+            <router-link class="nav-link" to="/models" style="color: #00aff0 !important; text-decoration: none;">
+              <i class="fas fa-users me-1" style="color: #00aff0 !important;"></i>
+              Creators
+            </router-link>
+          </li>
+          <!-- Creators Link - Only on user pages (right side) -->
+          <li v-if="showCreatorsLinkOnUserPages" class="nav-item">
+            <router-link class="nav-link" to="/models" style="color: #00aff0 !important; text-decoration: none;">
+              <i class="fas fa-users me-1" style="color: #00aff0 !important;"></i>
+              Creators
+            </router-link>
+          </li>
+          <!-- User Quick Access -->
           <li v-if="isUser" class="nav-item">
             <router-link class="nav-link" to="/user/models" style="color: #00aff0 !important; text-decoration: none;">
               <i class="fas fa-images me-1" style="color: #00aff0 !important;"></i>
@@ -46,9 +64,48 @@
               Chats
             </router-link>
           </li>
-        </ul>
 
-        <ul class="navbar-nav ms-auto">
+          <!-- Manager Quick Access -->
+          <li v-if="isManager" class="nav-item">
+            <router-link class="nav-link" to="/manager/model" style="color: #00aff0 !important; text-decoration: none;">
+              <i class="fas fa-user-edit me-1" style="color: #00aff0 !important;"></i>
+              Model
+            </router-link>
+          </li>
+          <li v-if="isManager" class="nav-item">
+            <router-link class="nav-link" to="/manager/chats" style="color: #00aff0 !important; text-decoration: none;">
+              <i class="fas fa-comments me-1" style="color: #00aff0 !important;"></i>
+              Chats
+            </router-link>
+          </li>
+          <li v-if="isManager" class="nav-item">
+            <router-link class="nav-link" to="/manager/subscribers" style="color: #00aff0 !important; text-decoration: none;">
+              <i class="fas fa-users me-1" style="color: #00aff0 !important;"></i>
+              Subscribers
+            </router-link>
+          </li>
+
+          <!-- Admin Quick Access -->
+          <li v-if="isAdmin" class="nav-item">
+            <router-link class="nav-link" to="/admin/users" style="color: #00aff0 !important; text-decoration: none;">
+              <i class="fas fa-users me-1" style="color: #00aff0 !important;"></i>
+              Users
+            </router-link>
+          </li>
+          <li v-if="isAdmin" class="nav-item">
+            <router-link class="nav-link" to="/admin/models" style="color: #00aff0 !important; text-decoration: none;">
+              <i class="fas fa-images me-1" style="color: #00aff0 !important;"></i>
+              Models
+            </router-link>
+          </li>
+          <li v-if="isAdmin" class="nav-item">
+            <router-link class="nav-link" to="/admin/chats" style="color: #00aff0 !important; text-decoration: none;">
+              <i class="fas fa-comments me-1" style="color: #00aff0 !important;"></i>
+              Chats
+            </router-link>
+          </li>
+
+          <!-- Auth Links -->
           <li v-if="!isAuthenticated" class="nav-item">
             <router-link class="nav-link" to="/login" style="color: #00aff0 !important; text-decoration: none;">
               <i class="fas fa-sign-in-alt me-1" style="color: #00aff0 !important;"></i>
@@ -109,9 +166,46 @@ export default {
     }
   },
   computed: {
-    ...mapGetters('auth', ['isAuthenticated', 'user', 'isUser']),
+    ...mapGetters('auth', ['isAuthenticated', 'user', 'isUser', 'isManager', 'isAdmin']),
     isHomePage() {
       return this.$route.path === '/'
+    },
+    showCreatorsLink() {
+      // Show on public pages (/, /models, /model/:id, /values, /safety) and user pages (/user/*)
+      // Hide on manager (/manager/*) and admin (/admin/*) pages
+      const path = this.$route.path
+      const isPublicPage = path === '/' || 
+                          path === '/models' || 
+                          path.startsWith('/model/') || 
+                          path === '/values' || 
+                          path === '/safety'
+      const isUserPage = path.startsWith('/user')
+      const isManagerPage = path.startsWith('/manager')
+      const isAdminPage = path.startsWith('/admin')
+      
+      return (isPublicPage || isUserPage) && !isManagerPage && !isAdminPage
+    },
+    showCreatorsLinkOnPublicPages() {
+      // Show only on public pages (localhost:8080), not on user/manager/admin pages
+      const path = this.$route.path
+      const isPublicPage = path === '/' || 
+                          path === '/models' || 
+                          path.startsWith('/model/') || 
+                          path === '/values' || 
+                          path === '/safety'
+      const isManagerPage = path.startsWith('/manager')
+      const isAdminPage = path.startsWith('/admin')
+      
+      return isPublicPage && !isManagerPage && !isAdminPage
+    },
+    showCreatorsLinkOnUserPages() {
+      // Show only on user pages, on the right side
+      const path = this.$route.path
+      const isUserPage = path.startsWith('/user')
+      const isManagerPage = path.startsWith('/manager')
+      const isAdminPage = path.startsWith('/admin')
+      
+      return isUserPage && !isManagerPage && !isAdminPage
     }
   },
   mounted() {
@@ -506,33 +600,55 @@ export default {
 <style scoped>
 .nav-link {
   color: #00aff0 !important;
+  transition: color 0.2s ease;
 }
 
 .nav-link:hover,
 .navbar-brand:hover {
-  opacity: 0.8;
-  color: #00aff0 !important;
+  color: #0091ea !important;
+}
+
+.nav-link:hover i,
+.nav-link:hover .fas {
+  color: #0091ea !important;
 }
 
 .nav-link.btn-link {
   color: #00aff0 !important;
+  transition: color 0.2s ease;
 }
 
 .nav-link.btn-link:hover {
-  color: #00aff0 !important;
-  opacity: 0.8;
+  color: #0091ea !important;
+}
+
+.nav-link.btn-link:hover i,
+.nav-link.btn-link:hover .fas {
+  color: #0091ea !important;
 }
 
 .nav-link i {
   color: #00aff0 !important;
+  transition: color 0.2s ease;
 }
 
 .dropdown-toggle {
   color: #00aff0 !important;
+  transition: color 0.2s ease;
+}
+
+.dropdown-toggle:hover {
+  color: #0091ea !important;
+}
+
+.dropdown-toggle:hover i,
+.dropdown-toggle:hover .fas {
+  color: #0091ea !important;
 }
 
 .dropdown-toggle i {
   color: #00aff0 !important;
+  transition: color 0.2s ease;
 }
 
 .dropdown-item:hover {
@@ -566,3 +682,4 @@ export default {
   border-color: #00aff0 !important;
 }
 </style>
+

@@ -8,24 +8,41 @@ router.get('/models', async (req, res) => {
     try {
         console.log('Fetching models...');
 
+        // Try to get user ID from token if authenticated
+        let userId = null;
+        try {
+            const authHeader = req.headers.authorization;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                const jwt = require('jsonwebtoken');
+                const token = authHeader.substring(7);
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                userId = decoded.userId;
+            }
+        } catch (err) {
+            // Not authenticated or invalid token, continue as public
+        }
+
         const models = await prisma.model.findMany({
             where: { isActive: true },
             include: {
                 manager: {
                     include: {
                         user: {
-                            select: { isActive: true }
+                            select: { isActive: true, id: true }
                         }
                     }
                 },
                 plans: {
                     where: { isActive: true },
-                    select: {
-                        id: true,
-                        name: true,
-                        description: true,
-                        price: true,
-                        duration: true
+                    include: {
+                        media: {
+                            where: {
+                                isActive: true
+                            },
+                            select: {
+                                type: true
+                            }
+                        }
                     }
                 }
             },
@@ -35,11 +52,44 @@ router.get('/models', async (req, res) => {
         console.log(`Found ${models.length} models`);
 
         // Filter out models from inactive managers
-        const activeModels = models.filter(model =>
+        let activeModels = models.filter(model =>
             model.manager && model.manager.user && model.manager.user.isActive
         );
 
-        console.log(`Returning ${activeModels.length} active models`);
+        // If user is authenticated, filter out models where user is blocked
+        if (userId) {
+            const filteredModels = [];
+            for (const model of activeModels) {
+                const isBlocked = await isUserBlockedByModel(userId, model.id);
+                if (!isBlocked) {
+                    filteredModels.push(model);
+                }
+            }
+            activeModels = filteredModels;
+        }
+
+        // Calculate photo and video counts for each plan in each model
+        activeModels = activeModels.map(model => {
+            const plansWithCounts = model.plans.map(plan => {
+                const photosCount = plan.media.filter(m => m.type === 'IMAGE').length;
+                const videosCount = plan.media.filter(m => m.type === 'VIDEO').length;
+
+                return {
+                    id: plan.id,
+                    name: plan.name,
+                    description: plan.description,
+                    price: plan.price,
+                    duration: plan.duration,
+                    photosCount,
+                    videosCount
+                };
+            });
+
+            return {
+                ...model,
+                plans: plansWithCounts
+            };
+        });
 
         res.json({
             models: activeModels,
@@ -61,24 +111,41 @@ router.get('/models/:id', async (req, res) => {
     try {
         const { id } = req.params;
 
+        // Try to get user ID from token if authenticated
+        let userId = null;
+        try {
+            const authHeader = req.headers.authorization;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                const jwt = require('jsonwebtoken');
+                const token = authHeader.substring(7);
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                userId = decoded.userId;
+            }
+        } catch (err) {
+            // Not authenticated or invalid token, continue as public
+        }
+
         const model = await prisma.model.findUnique({
             where: { id },
             include: {
                 manager: {
                     include: {
                         user: {
-                            select: { isActive: true }
+                            select: { isActive: true, id: true }
                         }
                     }
                 },
                 plans: {
                     where: { isActive: true },
-                    select: {
-                        id: true,
-                        name: true,
-                        description: true,
-                        price: true,
-                        duration: true
+                    include: {
+                        media: {
+                            where: {
+                                isActive: true
+                            },
+                            select: {
+                                type: true
+                            }
+                        }
                     }
                 }
             }
@@ -88,12 +155,76 @@ router.get('/models/:id', async (req, res) => {
             return res.status(404).json({ message: 'Model not found' });
         }
 
+        // Calculate photo and video counts for each plan
+        const plansWithCounts = model.plans.map(plan => {
+            const photosCount = plan.media.filter(m => m.type === 'IMAGE').length;
+            const videosCount = plan.media.filter(m => m.type === 'VIDEO').length;
+
+            return {
+                id: plan.id,
+                name: plan.name,
+                description: plan.description,
+                price: plan.price,
+                duration: plan.duration,
+                photosCount,
+                videosCount
+            };
+        });
+
+        model.plans = plansWithCounts;
+
+        // If user is authenticated, check if they're blocked
+        if (userId) {
+            const isBlocked = await isUserBlockedByModel(userId, id);
+            if (isBlocked) {
+                return res.status(404).json({ message: 'Model not found' });
+            }
+        }
+
         res.json({ model });
     } catch (error) {
         console.error('Get model error:', error);
         res.status(500).json({ message: 'Failed to fetch model' });
     }
 });
+
+// Helper function to check if user is blocked by model's manager
+async function isUserBlockedByModel(userId, modelId) {
+    try {
+        const model = await prisma.model.findUnique({
+            where: { id: modelId },
+            include: {
+                manager: {
+                    include: {
+                        user: {
+                            select: { id: true }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!model || !model.manager) {
+            return false;
+        }
+
+        const managerUserId = model.manager.user.id;
+
+        const blockRecord = await prisma.blockedUser.findUnique({
+            where: {
+                blockedById_blockedUserId: {
+                    blockedById: managerUserId,
+                    blockedUserId: userId
+                }
+            }
+        });
+
+        return !!blockRecord;
+    } catch (error) {
+        console.error('Error checking block status:', error);
+        return false;
+    }
+}
 
 // Demo payment processing
 router.post('/subscribe', async (req, res) => {
@@ -103,6 +234,28 @@ router.post('/subscribe', async (req, res) => {
         // Validate required fields
         if (!modelId || !planId || !paymentData) {
             return res.status(400).json({ message: 'Missing required fields' });
+        }
+
+        // Get user ID from token if available (for authenticated users)
+        let userId = null;
+        try {
+            const authHeader = req.headers.authorization;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                const jwt = require('jsonwebtoken');
+                const token = authHeader.substring(7);
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                userId = decoded.userId;
+            }
+        } catch (err) {
+            // Not authenticated, continue with payment processing
+        }
+
+        // If user is authenticated, check if they're blocked
+        if (userId) {
+            const isBlocked = await isUserBlockedByModel(userId, modelId);
+            if (isBlocked) {
+                return res.status(403).json({ message: 'You are blocked from subscribing to this model' });
+            }
         }
 
         // Verify model and plan exist

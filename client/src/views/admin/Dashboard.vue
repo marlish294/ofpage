@@ -52,47 +52,6 @@
       </div>
     </div>
 
-    <!-- Quick Actions -->
-    <div class="row mb-4">
-      <div class="col-12">
-        <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
-          <div class="card-header" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
-            <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
-              <i class="fas fa-bolt me-2" style="color: #00aff0;"></i>
-              Quick Actions
-            </h5>
-          </div>
-          <div class="card-body" style="padding: 1.5rem;">
-            <div class="row">
-              <div class="col-md-3 mb-2">
-                <router-link to="/admin/users" class="btn w-100" style="background-color: #00aff0; border-color: #00aff0; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.75rem 1.5rem; transition: all 0.2s ease; text-decoration: none; display: block; text-align: center;" @mouseover="e => e.target.style.backgroundColor = '#0091ea'" @mouseout="e => e.target.style.backgroundColor = '#00aff0'">
-                  <i class="fas fa-users me-2"></i>
-                  Manage Users
-                </router-link>
-              </div>
-              <div class="col-md-3 mb-2">
-                <router-link to="/admin/models" class="btn w-100" style="background-color: #00aff0; border-color: #00aff0; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.75rem 1.5rem; transition: all 0.2s ease; text-decoration: none; display: block; text-align: center;" @mouseover="e => e.target.style.backgroundColor = '#0091ea'" @mouseout="e => e.target.style.backgroundColor = '#00aff0'">
-                  <i class="fas fa-star me-2"></i>
-                  Manage Models
-                </router-link>
-              </div>
-              <div class="col-md-3 mb-2">
-                <router-link to="/admin/chats" class="btn w-100" style="background-color: #00aff0; border-color: #00aff0; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.75rem 1.5rem; transition: all 0.2s ease; text-decoration: none; display: block; text-align: center;" @mouseover="e => e.target.style.backgroundColor = '#0091ea'" @mouseout="e => e.target.style.backgroundColor = '#00aff0'">
-                  <i class="fas fa-comments me-2"></i>
-                  View Chats
-                </router-link>
-              </div>
-              <div class="col-md-3 mb-2">
-                <button class="btn w-100" @click="refreshStats" style="background-color: #00aff0; border-color: #00aff0; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.75rem 1.5rem; transition: all 0.2s ease;" @mouseover="e => e.target.style.backgroundColor = '#0091ea'" @mouseout="e => e.target.style.backgroundColor = '#00aff0'">
-                  <i class="fas fa-sync-alt me-2"></i>
-                  Refresh Stats
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <!-- Pending Approvals -->
     <div class="row">
@@ -192,6 +151,13 @@ export default {
       this.fetchStats(),
       this.fetchPendingManagers()
     ])
+    
+    // Listen for refresh event from navbar
+    window.addEventListener('refresh-admin-stats', this.refreshStats)
+  },
+  
+  beforeUnmount() {
+    window.removeEventListener('refresh-admin-stats', this.refreshStats)
   },
   methods: {
     async fetchStats() {

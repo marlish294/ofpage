@@ -286,6 +286,9 @@ import store from '../store'
 // Public views
 import SocialHome from '../views/social/Home.vue'
 import ModelDetail from '../views/social/ModelDetail.vue'
+import Models from '../views/social/Models.vue'
+import Values from '../views/social/Values.vue'
+import Safety from '../views/social/Safety.vue'
 import Login from '../views/auth/Login.vue'
 import Register from '../views/auth/Register.vue'
 
@@ -298,6 +301,7 @@ import UserModels from '../views/user/Models.vue'
 import ManagerDashboard from '../views/manager/Dashboard.vue'
 import ManagerModel from '../views/manager/Model.vue'
 import ManagerChats from '../views/manager/Chats.vue'
+import ManagerSubscribers from '../views/manager/Subscribers.vue'
 
 // Admin views
 import AdminDashboard from '../views/admin/Dashboard.vue'
@@ -307,7 +311,10 @@ import AdminChats from '../views/admin/Chats.vue'
 
 const routes = [
     { path: '/', name: 'SocialHome', component: SocialHome },
+    { path: '/models', name: 'Models', component: Models },
     { path: '/model/:id', name: 'ModelDetail', component: ModelDetail, props: true },
+    { path: '/values', name: 'Values', component: Values },
+    { path: '/safety', name: 'Safety', component: Safety },
     { path: '/login', name: 'Login', component: Login },
     { path: '/register', name: 'Register', component: Register },
 
@@ -320,6 +327,7 @@ const routes = [
     { path: '/manager', name: 'ManagerDashboard', component: ManagerDashboard, meta: { requiresAuth: true, role: 'MANAGER' } },
     { path: '/manager/model', name: 'ManagerModel', component: ManagerModel, meta: { requiresAuth: true, role: 'MANAGER' } },
     { path: '/manager/chats', name: 'ManagerChats', component: ManagerChats, meta: { requiresAuth: true, role: 'MANAGER' } },
+    { path: '/manager/subscribers', name: 'ManagerSubscribers', component: ManagerSubscribers, meta: { requiresAuth: true, role: 'MANAGER' } },
 
     // Admin routes
     { path: '/admin', name: 'AdminDashboard', component: AdminDashboard, meta: { requiresAuth: true, role: 'ADMIN' } },

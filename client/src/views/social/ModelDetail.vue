@@ -13,119 +13,136 @@
       {{ error }}
     </div>
 
-    <div v-else-if="model" class="row">
-      <!-- Model Info -->
-      <div class="col-lg-8">
-        <div class="card mb-4" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
-          <div class="row g-0">
-            <div class="col-md-4">
+    <div v-else-if="model">
+      <!-- Model Header: Avatar, Name, Username -->
+      <div style="padding: 1rem; display: flex; align-items: flex-start; gap: 0.75rem; flex-shrink: 0; margin-bottom: 2rem; position: relative;">
+        <!-- Timestamp at top right -->
+        <div style="position: absolute; top: 1rem; right: 1rem; z-index: 10; font-size: 0.75rem; color: #8a96a3; font-weight: 500;">
+          Yesterday
+        </div>
+        
+        <!-- Circular Avatar -->
+        <img
+          :src="model.photoUrl || 'https://via.placeholder.com/48'"
+          :alt="`${model.name} ${model.surname}`"
+          style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0;"
+        />
+        <!-- Name and Username -->
+        <div style="flex: 1; min-width: 0;">
+          <h5 style="margin: 0 0 0.25rem 0; font-size: 1.125rem; font-weight: 700; color: rgb(26, 26, 26); line-height: 1.3; display: flex; align-items: center; gap: 0.5rem;">
+            {{ model.name }} {{ model.surname }}
+            <svg class="m-verified g-icon" data-icon-name="icon-verified" aria-hidden="true" style="width: 18px; height: 18px; flex-shrink: 0;">
+              <use href="#icon-verified" xlink:href="#icon-verified"></use>
+            </svg>
+          </h5>
+          <p style="margin: 0; font-size: 0.875rem; font-weight: 500; color: rgb(138, 150, 163); line-height: 1.3;">
+            @{{ (model.name + model.surname).toLowerCase().replace(/\s+/g, '') }}
+          </p>
+        </div>
+      </div>
+
+      <!-- Bio Section -->
+      <div style="padding: 0 1rem 1rem 1rem; margin-bottom: 2rem;">
+        <p style="margin: 0; font-size: 0.9375rem; line-height: 1.6; color: #2c3e50; font-weight: 400;">
+          {{ model.bio || 'No bio available' }}
+        </p>
+      </div>
+
+      <!-- Main Content: Photo/Video on Left, Subscription Plans on Right -->
+      <div class="row">
+        <!-- Left Column: Photo and Video -->
+        <div class="col-lg-8">
+          <!-- Model Photo -->
+          <div class="card mb-4" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+            <div class="card-body p-0">
               <img
-                :src="model.photoUrl || 'https://via.placeholder.com/400x600'"
-                class="img-fluid rounded-start h-100"
+                :src="model.photoUrl || 'https://via.placeholder.com/800x600'"
+                class="img-fluid"
                 :alt="`${model.name} ${model.surname}`"
-                style="object-fit: cover; min-height: 300px;"
+                style="width: 100%; height: auto; border-radius: 12px; object-fit: cover; display: block;"
               />
             </div>
-            <div class="col-md-8">
-              <div class="card-body">
-                <h1 class="card-title">
-                  {{ model.name }} {{ model.surname }}
-                </h1>
-                <div class="row mb-3">
-                  <div class="col-sm-6">
-                    <p class="card-text">
-                      <i class="fas fa-birthday-cake me-2 text-primary"></i>
-                      <strong>Age:</strong> {{ model.age }} years old
-                    </p>
-                  </div>
-                  <div class="col-sm-6">
-                    <p class="card-text">
-                      <i class="fas fa-palette me-2 text-primary"></i>
-                      <strong>Hair:</strong> {{ model.hairColor }}
-                    </p>
-                  </div>
-                  <div class="col-sm-6">
-                    <p class="card-text">
-                      <i class="fas fa-paint-brush me-2 text-primary"></i>
-                      <strong>Skin:</strong> {{ model.skinColor }}
-                    </p>
-                  </div>
-                </div>
-                <p class="card-text">
-                  <strong>About:</strong><br>
-                  {{ model.bio }}
-                </p>
+          </div>
+
+          <!-- Video Preview -->
+          <div v-if="model.videoUrl" class="card mb-4" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+            <div class="card-header" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
+              <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
+                <i class="fas fa-video me-2" style="color: #00aff0;"></i>
+                Video Preview
+              </h5>
+            </div>
+            <div class="card-body p-0">
+              <div class="ratio ratio-16x9">
+                <video controls style="border-radius: 0 0 12px 12px;">
+                  <source :src="model.videoUrl" type="video/mp4">
+                  Your browser does not support the video tag.
+                </video>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Video Preview -->
-        <div v-if="model.videoUrl" class="card mb-4" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
-          <div class="card-header" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
-            <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
-              <i class="fas fa-video me-2" style="color: #00aff0;"></i>
-              Video Preview
-            </h5>
-          </div>
-          <div class="card-body">
-            <div class="ratio ratio-16x9">
-              <video controls>
-                <source :src="model.videoUrl" type="video/mp4">
-                Your browser does not support the video tag.
-              </video>
+        <!-- Right Column: Subscription Plans -->
+        <div class="col-lg-4">
+          <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem; position: sticky; top: 100px;">
+            <div class="card-header" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
+              <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
+                <i class="fas fa-crown me-2" style="color: #00aff0;"></i>
+                Subscription Plans
+              </h5>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Subscription Plans -->
-      <div class="col-lg-4">
-        <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
-          <div class="card-header" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
-            <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
-              <i class="fas fa-crown me-2" style="color: #00aff0;"></i>
-              Subscription Plans
-            </h5>
-          </div>
-          <div class="card-body">
-            <div v-if="model.plans.length === 0" class="text-center text-muted">
-              <i class="fas fa-info-circle fa-2x mb-2"></i>
-              <p>No plans available yet</p>
-            </div>
-            
-            <div v-else>
-              <div
-                v-for="plan in model.plans"
-                :key="plan.id"
-                class="card mb-3 border-primary"
-                :class="{ 'border-success': plan.name.toLowerCase().includes('premium') || plan.name.toLowerCase().includes('vip') }"
-              >
-                <div class="card-body">
-                  <h6 class="card-title d-flex justify-content-between align-items-center">
-                    {{ plan.name }}
-                    <span class="badge bg-primary">
-                      ${{ plan.price }}
-                    </span>
-                  </h6>
-                  <p class="card-text small text-muted">
-                    {{ plan.description }}
-                  </p>
-                  <div class="d-flex justify-content-between align-items-center">
-                    <small class="text-muted">
-                      <i class="fas fa-clock me-1"></i>
-                      {{ plan.duration }} days
-                    </small>
-                    <button
-                      class="btn btn-sm"
-                      @click="subscribe(plan)"
-                      style="background-color: #00aff0; border-color: #00aff0; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.5rem 1rem; transition: all 0.2s ease;"
-                      @mouseover="e => e.target.style.backgroundColor = '#0091ea'"
-                      @mouseout="e => e.target.style.backgroundColor = '#00aff0'"
-                    >
-                      <i class="fas fa-credit-card me-1"></i>
-                      Subscribe
-                    </button>
+            <div class="card-body">
+              <div v-if="model.plans.length === 0" class="text-center text-muted">
+                <i class="fas fa-info-circle fa-2x mb-2"></i>
+                <p>No plans available yet</p>
+              </div>
+              
+              <div v-else>
+                <div
+                  v-for="plan in model.plans"
+                  :key="plan.id"
+                  class="card mb-3 border-primary"
+                  :class="{ 'border-success': plan.name.toLowerCase().includes('premium') || plan.name.toLowerCase().includes('vip') }"
+                  style="border-radius: 8px;"
+                >
+                  <div class="card-body">
+                    <h6 class="card-title d-flex justify-content-between align-items-center mb-2">
+                      {{ plan.name }}
+                      <span class="badge bg-primary">
+                        ${{ plan.price }}
+                      </span>
+                    </h6>
+                    <p class="card-text small text-muted mb-3" style="min-height: 40px;">
+                      {{ plan.description }}
+                    </p>
+                    <!-- Photos and Videos Count -->
+                    <div class="d-flex gap-3 mb-3" style="gap: 1rem;">
+                      <small class="text-muted d-flex align-items-center">
+                        <i class="fas fa-image me-1" style="color: #00aff0;"></i>
+                        {{ plan.photosCount || 0 }} Photos
+                      </small>
+                      <small class="text-muted d-flex align-items-center">
+                        <i class="fas fa-video me-1" style="color: #00aff0;"></i>
+                        {{ plan.videosCount || 0 }} Videos
+                      </small>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center">
+                      <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        {{ plan.duration }} days
+                      </small>
+                      <button
+                        class="btn btn-sm"
+                        @click="subscribe(plan)"
+                        style="background-color: #00aff0; border-color: #00aff0; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.5rem 1rem; transition: all 0.2s ease;"
+                        @mouseover="e => e.target.style.backgroundColor = '#0091ea'"
+                        @mouseout="e => e.target.style.backgroundColor = '#00aff0'"
+                      >
+                        <i class="fas fa-credit-card me-1"></i>
+                        Subscribe
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
