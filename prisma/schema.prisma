@@ -11,56 +11,60 @@ datasource db {
 }
 
 model User {
-  id          String        @id @default(cuid())
-  email       String        @unique
-  password    String
-  role        String        @default("USER") // USER, MANAGER, ADMIN
-  isActive    Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  role      String   @default("USER") // USER, MANAGER, ADMIN
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  subscriptions Subscription[]
-  messages      Message[]
-  blockedBy     BlockedUser[] @relation("BlockedBy")
-  blockedUsers  BlockedUser[] @relation("BlockedUsers")
-  manager       Manager?
-  chats         Chat[]
+  subscriptions    Subscription[]
+  messages         Message[]
+  sentMessages     Message[]      @relation("MessageSender")
+  receivedMessages Message[]      @relation("MessageReceiver")
+  blockedBy        BlockedUser[]  @relation("BlockedBy")
+  blockedUsers     BlockedUser[]  @relation("BlockedUsers")
+  manager          Manager?
+  chats            Chat[]
+
+  mediaUnlocks MessageMediaUnlock[] // 👈 add this line
 
   @@map("users")
 }
 
 model Manager {
-  id          String      @id @default(cuid())
-  userId      String      @unique
-  isApproved  Boolean     @default(false)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  isApproved Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Relations
-  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  model       Model?
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  model Model?
 
   @@map("managers")
 }
 
 model Model {
-  id          String       @id @default(cuid())
-  managerId   String       @unique
-  name        String
-  surname     String
-  bio         String
-  age         Int
-  hairColor   String
-  skinColor   String
-  photoUrl    String?
-  videoUrl    String?
-  isActive    Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  id        String   @id @default(cuid())
+  managerId String   @unique
+  name      String
+  surname   String
+  bio       String
+  age       Int
+  hairColor String
+  skinColor String
+  photoUrl  String?
+  videoUrl  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  manager       Manager       @relation(fields: [managerId], references: [id], onDelete: Cascade)
+  manager       Manager        @relation(fields: [managerId], references: [id], onDelete: Cascade)
   plans         Plan[]
   subscriptions Subscription[]
   messages      Message[]
@@ -75,7 +79,7 @@ model Plan {
   name        String
   description String
   price       Float
-  duration    Int      // in days
+  duration    Int // in days
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -91,79 +95,120 @@ model Plan {
 model Media {
   id        String   @id @default(cuid())
   planId    String
-  type      String   // 'IMAGE' or 'VIDEO'
+  type      String // 'IMAGE' or 'VIDEO'
   url       String
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  plan      Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
 
   @@map("media")
 }
 
 model Subscription {
-  id        String   @id @default(cuid())
-  userId    String
-  modelId   String
-  planId    String
-  amountPaid Float   @default(0)
-  isActive  Boolean  @default(true)
-  startDate DateTime @default(now())
-  endDate   DateTime
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(cuid())
+  userId     String
+  modelId    String
+  planId     String
+  amountPaid Float    @default(0)
+  isActive   Boolean  @default(true)
+  startDate  DateTime @default(now())
+  endDate    DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Relations
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   model Model @relation(fields: [modelId], references: [id], onDelete: Cascade)
   plan  Plan  @relation(fields: [planId], references: [id])
-  
+
   @@map("subscriptions")
 }
 
 model Chat {
-  id         String     @id @default(cuid())
-  createdAt  DateTime   @default(now())
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
 
   // Relations
-  userId     String
-  modelId    String
-  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  model      Model      @relation(fields: [modelId], references: [id], onDelete: Cascade)
-  messages   Message[]
+  userId   String
+  modelId  String
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  model    Model     @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  messages Message[]
 
   @@unique([userId, modelId])
   @@map("chats")
 }
 
 model Message {
-  id          String    @id @default(cuid())
-  userId      String
-  modelId     String
-  chatId      String
-  content     String
-  isFromUser  Boolean   @default(true)
-  createdAt   DateTime  @default(now())
+  id             String   @id @default(cuid())
+  userId         String
+  modelId        String
+  chatId         String
+  content        String?
+  isFromUser     Boolean  @default(true)
+  senderUserId   String?
+  receiverUserId String?
+  createdAt      DateTime @default(now())
 
   // Relations
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  model  Model  @relation(fields: [modelId], references: [id], onDelete: Cascade)
-  chat   Chat   @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  model        Model         @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  chat         Chat          @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  senderUser   User?         @relation("MessageSender", fields: [senderUserId], references: [id])
+  receiverUser User?         @relation("MessageReceiver", fields: [receiverUserId], references: [id])
+  media        MessageMedia?
 
   @@map("messages")
 }
 
-model BlockedUser {
-  id             String   @id @default(cuid())
-  blockedById    String
-  blockedUserId  String
-  createdAt      DateTime @default(now())
+model MessageMedia {
+  id         String   @id @default(cuid())
+  messageId  String   @unique
+  bucket     String?
+  objectName String
+  url        String
+  type       String
+  size       Int?
+  metadata   String?
+  isLocked   Boolean  @default(false)
+  lockPrice  Float?   @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Relations
-  blockedBy    User @relation("BlockedBy", fields: [blockedById], references: [id], onDelete: Cascade)
-  blockedUser  User @relation("BlockedUsers", fields: [blockedUserId], references: [id], onDelete: Cascade)
+  message Message              @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  unlocks MessageMediaUnlock[]
+
+  @@map("message_media")
+}
+
+model MessageMediaUnlock {
+  id         String   @id @default(cuid())
+  mediaId    String
+  userId     String
+  amountPaid Float    @default(0)
+  createdAt  DateTime @default(now())
+
+  // Relations
+  media MessageMedia @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  user  User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaId, userId])
+  @@map("message_media_unlocks")
+}
+
+model BlockedUser {
+  id            String   @id @default(cuid())
+  blockedById   String
+  blockedUserId String
+  createdAt     DateTime @default(now())
+
+  // Relations
+  blockedBy   User @relation("BlockedBy", fields: [blockedById], references: [id], onDelete: Cascade)
+  blockedUser User @relation("BlockedUsers", fields: [blockedUserId], references: [id], onDelete: Cascade)
 
   @@unique([blockedById, blockedUserId])
   @@map("blocked_users")

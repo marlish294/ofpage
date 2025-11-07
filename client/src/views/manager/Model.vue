@@ -262,18 +262,18 @@
                       </div>
                       
                     </div>
-                    <div class="mt-3 d-flex gap-2">
-                      <button class="btn btn-primary btn-sm" :disabled="savingPlan" @click="saveEditPlan(plan.id)">
-                        <span v-if="savingPlan" class="spinner-border spinner-border-sm me-1"></span>
-                        Save Changes
-                      </button>
-                      <button class="btn btn-outline-secondary btn-sm" @click="cancelEditPlan(plan.id)">Cancel</button>
-                      <button class="btn btn-danger btn-sm ms-auto" @click="deletePlan(plan.id)">
-                        <i class="fas fa-trash me-1"></i> Delete Plan
-                      </button>
-                      <button class="btn btn-outline-info btn-sm" @click="togglePlanMedia(plan.id)">
-                        <i class="fas fa-images me-1"></i> Manage Media
-                      </button>
+                     <div class="mt-4 d-flex flex-wrap gap-2 align-items-center">
+                       <button class="btn btn-primary btn-sm action-btn no-padding" :disabled="savingPlan" @click="saveEditPlan(plan.id)">
+                         <span v-if="savingPlan" class="spinner-border spinner-border-sm me-1"></span>
+                         Save Changes
+                       </button>
+                       <button class="btn btn-outline-secondary btn-sm action-btn" @click="cancelEditPlan(plan.id)">Cancel</button>
+                       <button class="btn btn-danger btn-sm action-btn" @click="deletePlan(plan.id)" title="Delete plan">
+                         <i class="fas fa-trash" aria-hidden="true"></i>
+                       </button>
+                       <button class="btn btn-outline-info btn-sm action-btn" @click="togglePlanMedia(plan.id)" title="Manage media">
+                         <i class="fa fa-paperclip" aria-hidden="true" style="color: rgb(0, 175, 240);"></i>
+                       </button>
                      </div>
                   </div>
 
@@ -1376,3 +1376,15 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.action-btn {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.no-padding {
+  padding: 0.35rem 0.75rem;
+}
+</style>

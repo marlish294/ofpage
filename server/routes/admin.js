@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const prisma = require('../config/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { formatMessages } = require('../utils/messageFormatter');
 
 const router = express.Router();
 
@@ -75,7 +76,14 @@ router.get('/dashboard', async (req, res) => {
             select: { amountPaid: true }
         });
 
-        const totalRevenue = allSubscriptions.reduce((sum, sub) => sum + (sub.amountPaid || 0), 0);
+        const subscriptionRevenue = allSubscriptions.reduce((sum, sub) => sum + (sub.amountPaid || 0), 0);
+
+        const mediaUnlocks = await prisma.messageMediaUnlock.findMany({
+            select: { amountPaid: true }
+        });
+
+        const mediaUnlockRevenue = mediaUnlocks.reduce((sum, unlock) => sum + (unlock.amountPaid || 0), 0);
+        const totalRevenue = subscriptionRevenue + mediaUnlockRevenue;
 
         // ✅ Total subscriber count (fixed for Prisma 5+)
         const distinctSubscribers = await prisma.subscription.findMany({
@@ -106,7 +114,10 @@ router.get('/dashboard', async (req, res) => {
                 totalSubscribers,
                 totalManagers,
                 totalModels,
-                pendingManagers
+                pendingManagers,
+                subscriptionRevenue,
+                mediaUnlockRevenue,
+                mediaUnlockCount: mediaUnlocks.length
             }
         });
 
@@ -597,12 +608,17 @@ router.get('/chat-messages', async (req, res) => {
                 },
                 model: {
                     select: { id: true, name: true, surname: true }
+                },
+                media: {
+                    include: { unlocks: true }
                 }
             },
             orderBy: { createdAt: 'asc' }
         });
 
-        res.json({ messages });
+        const formatted = formatMessages(messages, { viewingAsManager: true });
+
+        res.json({ messages: formatted });
 
     } catch (error) {
         console.error('Get chat messages error:', error);

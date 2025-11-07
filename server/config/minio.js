@@ -166,10 +166,13 @@ const initializeMinIO = () => {
 const fs = require('fs');
 const path = require('path');
 
-const uploadFile = async (file, fileName, contentType) => {
+const uploadFile = async (file, fileName, contentType, options = {}) => {
     try {
-        const objectName = `${Date.now()}-${fileName}`;
-        const metaData = { 'Content-Type': contentType };
+        const safeFileName = fileName.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const folder = options.folder ? `${options.folder.replace(/\s+/g, '_').replace(/\/+$/, '')}/` : '';
+        const targetBucket = options.bucket || process.env.MINIO_BUCKET;
+        const objectName = `${folder}${Date.now()}-${safeFileName}`;
+        const metaData = { 'Content-Type': contentType, ...(options.metaData || {}) };
 
         console.log('🚀 Uploading to MinIO:', fileName, 'size:', file.length || file.size);
 
@@ -177,7 +180,7 @@ const uploadFile = async (file, fileName, contentType) => {
         if (Buffer.isBuffer(file)) {
             console.log('📦 File is a Buffer — uploading with size parameter');
             await minioClient.putObject(
-                process.env.MINIO_BUCKET,
+                targetBucket,
                 objectName,
                 file,
                 file.length, // << required for large buffers
@@ -190,7 +193,7 @@ const uploadFile = async (file, fileName, contentType) => {
             console.log('🗂️ File is a path — streaming to MinIO');
             const fileStream = fs.createReadStream(file);
             await minioClient.putObject(
-                process.env.MINIO_BUCKET,
+                targetBucket,
                 objectName,
                 fileStream,
                 metaData
@@ -202,9 +205,12 @@ const uploadFile = async (file, fileName, contentType) => {
 
         console.log('✅ MinIO upload success');
 
+        const baseBucketUrl = `${process.env.MINIO_URL}/${targetBucket}`;
+
         return {
             success: true,
-            url: `${process.env.MINIO_URL}/${process.env.MINIO_BUCKET}/${objectName}`,
+            url: `${baseBucketUrl}/${objectName}`,
+            bucket: targetBucket,
             objectName
         };
     } catch (error) {

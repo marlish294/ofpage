@@ -155,7 +155,8 @@
                           </span>
                         </div>
                         <div v-if="userChat.lastMessage" class="text-truncate" style="max-width: 180px; font-size: 0.75rem; color: #6c757d;">
-                          {{ userChat.lastMessage.isFromUser ? userChat.user.email : model.name }}: {{ userChat.lastMessage.content.substring(0, 25) }}...
+                          {{ userChat.lastMessage.isFromUser ? userChat.user.email : model.name }}:
+                          {{ (userChat.lastMessage.content || '[Media]')?.substring(0, 25) }}...
                         </div>
                         <small v-else class="text-muted">No messages yet</small>
                       </div>
@@ -224,14 +225,35 @@
                   v-for="message in messages"
                   :key="message.id"
                   class="message mb-0"
-                  :class="{ 'text-end': !message.isFromUser }"
+                  :class="{ 'text-end': message.isFromUser }"
                 >
                   <div
                     class="d-inline-block p-3 rounded"
                     :class="message.isFromUser ? 'bg-primary text-white' : 'bg-white border'"
                     style="max-width: 70%;"
                   >
-                    <div class="message-content">{{ message.content }}</div>
+                    <div class="message-content">
+                      <div v-if="message.content" class="mb-2">{{ message.content }}</div>
+                      <template v-if="message.media">
+                        <div class="message-media">
+                          <img
+                            v-if="message.media.type === 'IMAGE'"
+                            :src="message.media.url"
+                            class="img-fluid rounded"
+                            alt="Chat media"
+                          />
+                          <video
+                            v-else
+                            :src="message.media.url"
+                            controls
+                            preload="metadata"
+                            class="w-100 rounded"
+                          ></video>
+                        </div>
+                        <div v-if="!message.content" class="mt-2 fw-semibold">[Media]</div>
+                      </template>
+                      <div v-if="!message.content && !message.media" class="fw-semibold">[No content]</div>
+                    </div>
                     <div class="message-time mt-1" :class="message.isFromUser ? 'text-white-50' : 'text-muted'">
                       <small>{{ formatTime(message.createdAt) }}</small>
                     </div>
@@ -439,10 +461,14 @@ export default {
     },
 
     scrollToBottom() {
-      const container = this.$refs.messagesContainer
-      if (container) {
-        container.scrollTop = container.scrollHeight
-      }
+      this.$nextTick(() => {
+        const container = this.$refs.messagesContainer
+        if (!container) return
+
+        requestAnimationFrame(() => {
+          container.scrollTop = container.scrollHeight
+        })
+      })
     },
 
     formatTime(timestamp) {
@@ -471,6 +497,14 @@ export default {
 
 .message {
   word-wrap: break-word;
+}
+
+.message-media img,
+.message-media video {
+  max-height: 320px;
+  width: 100%;
+  object-fit: cover;
+  border-radius: 12px;
 }
 
 .avatar {

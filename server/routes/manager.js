@@ -3,6 +3,7 @@ const multer = require('multer');
 const prisma = require('../config/database');
 const { authenticateToken, requireManager } = require('../middleware/auth');
 const { uploadFile } = require('../config/minio');
+const { formatMessages, formatMessage } = require('../utils/messageFormatter');
 
 const router = express.Router();
 
@@ -813,7 +814,21 @@ router.get('/dashboard', async (req, res) => {
             select: { amountPaid: true }
         });
 
-        const totalRevenue = subscriptions.reduce((sum, sub) => sum + (sub.amountPaid || 0), 0);
+        const subscriptionRevenue = subscriptions.reduce((sum, sub) => sum + (sub.amountPaid || 0), 0);
+
+        const mediaUnlocks = await prisma.messageMediaUnlock.findMany({
+            where: {
+                media: {
+                    message: {
+                        modelId: manager.model.id
+                    }
+                }
+            },
+            select: { amountPaid: true }
+        });
+
+        const mediaUnlockRevenue = mediaUnlocks.reduce((sum, unlock) => sum + (unlock.amountPaid || 0), 0);
+        const totalRevenue = subscriptionRevenue + mediaUnlockRevenue;
 
         // Get recent subscriptions (last 30 days)
         const thirtyDaysAgo = new Date();
@@ -833,7 +848,10 @@ router.get('/dashboard', async (req, res) => {
             stats: {
                 activeSubscriptions,
                 totalRevenue,
-                recentSubscriptions
+                recentSubscriptions,
+                subscriptionRevenue,
+                mediaUnlockRevenue,
+                mediaUnlockCount: mediaUnlocks.length
             }
         });
 
@@ -1032,6 +1050,9 @@ router.get('/chats', async (req, res) => {
                 },
                 model: {
                     select: { id: true, name: true, surname: true }
+                },
+                media: {
+                    include: { unlocks: true }
                 }
             },
             orderBy: { createdAt: 'desc' },
@@ -1040,7 +1061,10 @@ router.get('/chats', async (req, res) => {
         });
 
         res.json({
-            messages: messages.reverse(),
+            messages: formatMessages(messages.reverse(), {
+                currentUserId: req.user.id,
+                viewingAsManager: true
+            }),
             hasMore: messages.length === parseInt(limit)
         });
 
@@ -1117,13 +1141,21 @@ router.get('/chats', async (req, res) => {
 // });
 
 // ✅ Send message as model (manager side)
-router.post('/messages', async (req, res) => {
+router.post('/messages', upload.single('media'), async (req, res) => {
     try {
-        const { userId, content } = req.body;
+        const { userId } = req.body;
+        let { content } = req.body;
+        const mediaFile = req.file;
 
-        if (!userId || !content) {
-            return res.status(400).json({ message: 'userId and content are required' });
+        if (!userId) {
+            return res.status(400).json({ message: 'userId is required' });
         }
+
+        if ((!content || !content.trim()) && !mediaFile) {
+            return res.status(400).json({ message: 'Message content or media is required' });
+        }
+
+        content = content && content.trim().length > 0 ? content.trim() : null;
 
         const manager = await prisma.manager.findUnique({
             where: { userId: req.user.id },
@@ -1146,24 +1178,84 @@ router.post('/messages', async (req, res) => {
         });
 
         // Create message
+        const isLocked = req.body.isLocked === 'true' || req.body.isLocked === true;
+        const lockPriceValue = req.body.lockPrice !== undefined ? parseFloat(req.body.lockPrice) : 0;
+
+        if (isLocked && (!lockPriceValue || Number.isNaN(lockPriceValue) || lockPriceValue <= 0)) {
+            return res.status(400).json({ message: 'A valid lock price is required when locking media' });
+        }
+
+        let uploadResult = null;
+        let uploadTimestamp = null;
+        if (mediaFile) {
+            uploadTimestamp = new Date().toISOString();
+            uploadResult = await uploadFile(mediaFile.buffer, mediaFile.originalname, mediaFile.mimetype, {
+                folder: 'chats-photos-videos',
+                metaData: {
+                    'x-amz-meta-sender-id': req.user.id,
+                    'x-amz-meta-receiver-id': userId,
+                    'x-amz-meta-chat-id': chat.id,
+                    'x-amz-meta-timestamp': uploadTimestamp,
+                    'x-amz-meta-file-type': mediaFile.mimetype
+                }
+            });
+
+            if (!uploadResult.success) {
+                return res.status(500).json({ message: 'Failed to upload media', error: uploadResult.error });
+            }
+        }
+
+        const serializedMetadata = mediaFile ? JSON.stringify({
+            originalName: mediaFile.originalname,
+            mimeType: mediaFile.mimetype,
+            senderUserId: req.user.id,
+            receiverUserId: userId,
+            chatId: chat.id,
+            uploadedAt: uploadTimestamp,
+            fileType: mediaFile.mimetype.startsWith('video/') ? 'VIDEO' : 'IMAGE',
+            fileUrl: uploadResult?.url
+        }) : null;
+
         const message = await prisma.message.create({
             data: {
                 userId,
                 modelId,
                 chatId: chat.id,
                 content,
-                isFromUser: false
+                isFromUser: false,
+                senderUserId: req.user.id,
+                receiverUserId: userId,
+                media: mediaFile ? {
+                    create: {
+                        bucket: uploadResult.bucket,
+                        objectName: uploadResult.objectName,
+                        url: uploadResult.url,
+                        type: mediaFile.mimetype.startsWith('video/') ? 'VIDEO' : 'IMAGE',
+                        size: mediaFile.size,
+                        metadata: serializedMetadata,
+                        isLocked,
+                        lockPrice: isLocked ? lockPriceValue : 0
+                    }
+                } : undefined
             },
             include: {
                 user: { select: { id: true, email: true } },
-                model: { select: { id: true, name: true, surname: true } }
+                model: { select: { id: true, name: true, surname: true } },
+                media: {
+                    include: { unlocks: true }
+                }
             }
         });
 
         const io = req.app.get('io');
-        if (io) io.to(`chat_${chat.id}`).emit('new_message', message);
+        const formattedMessage = formatMessage(message, {
+            currentUserId: req.user.id,
+            viewingAsManager: true
+        });
 
-        res.json({ message });
+        if (io) io.to(`chat_${chat.id}`).emit('new_message', formattedMessage);
+
+        res.json({ message: formattedMessage });
         //     } catch (error) {
         //         console.error('Send message error:', error);
         //         res.status(500).json({ message: 'Failed to send message' });

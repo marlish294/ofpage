@@ -28,6 +28,14 @@ const mutations = {
     },
     CLEAR_MESSAGES(state) {
         state.messages = {}
+    },
+    UPDATE_MESSAGE(state, { modelId, message }) {
+        if (!state.messages[modelId]) return
+
+        const index = state.messages[modelId].findIndex(existing => existing.id === message.id)
+        if (index === -1) return
+
+        state.messages[modelId].splice(index, 1, message)
     }
 }
 
@@ -66,6 +74,16 @@ const actions = {
             console.log('Received new message:', message)
             commit('ADD_MESSAGE', {
                 modelId: message.model?.id,
+                message
+            })
+        })
+
+        socket.on('media_unlocked', (payload) => {
+            const message = payload?.messageForUser || payload?.message || payload?.messageForManager
+            if (!message?.model?.id) return
+
+            commit('UPDATE_MESSAGE', {
+                modelId: message.model.id,
                 message
             })
         })

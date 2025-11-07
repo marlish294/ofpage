@@ -373,8 +373,25 @@
 // File: /Users/admin/Desktop/newnew/server/routes/user.js
 // ==========================
 const express = require('express');
+const multer = require('multer');
 const prisma = require('../config/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
+const { uploadFile } = require('../config/minio');
+const { formatMessages, formatMessage } = require('../utils/messageFormatter');
+
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 200 * 1024 * 1024
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image and video files are allowed'), false);
+        }
+    }
+});
 
 const router = express.Router();
 
@@ -720,7 +737,10 @@ router.get('/chats/:modelId', async (req, res) => {
             where: { chatId: chat.id },
             include: {
                 user: { select: { id: true, email: true } },
-                model: { select: { id: true, name: true, surname: true } }
+                model: { select: { id: true, name: true, surname: true } },
+                media: {
+                    include: { unlocks: true }
+                }
             },
             orderBy: { createdAt: 'desc' },
             take: parseInt(limit),
@@ -728,7 +748,7 @@ router.get('/chats/:modelId', async (req, res) => {
         });
 
         res.json({
-            messages: messages.reverse(),
+            messages: formatMessages(messages.reverse(), { currentUserId: req.user.id }),
             hasMore: messages.length === parseInt(limit)
         });
     } catch (error) {
@@ -740,13 +760,21 @@ router.get('/chats/:modelId', async (req, res) => {
 // ======================================================
 // 💌 Send message (user → model) with chatId included
 // ======================================================
-router.post('/messages', async (req, res) => {
+router.post('/messages', upload.single('media'), async (req, res) => {
     try {
-        const { modelId, content } = req.body;
+        const { modelId } = req.body;
+        let { content } = req.body;
+        const mediaFile = req.file;
 
-        if (!modelId || !content) {
-            return res.status(400).json({ message: 'Model ID and content are required' });
+        if (!modelId) {
+            return res.status(400).json({ message: 'Model ID is required' });
         }
+
+        if ((!content || !content.trim()) && !mediaFile) {
+            return res.status(400).json({ message: 'Message content or media is required' });
+        }
+
+        content = content && content.trim().length > 0 ? content.trim() : null;
 
         // Check if user is blocked by the model's manager
         const isBlocked = await isUserBlockedByModel(req.user.id, modelId);
@@ -767,6 +795,25 @@ router.post('/messages', async (req, res) => {
             return res.status(403).json({ message: 'No access to this model' });
         }
 
+        const targetModel = await prisma.model.findUnique({
+            where: { id: modelId },
+            include: {
+                manager: {
+                    include: {
+                        user: {
+                            select: { id: true }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!targetModel || !targetModel.manager) {
+            return res.status(404).json({ message: 'Model not found' });
+        }
+
+        const managerUserId = targetModel.manager.user?.id;
+
         // Find or create chat
         let chat = await prisma.chat.findFirst({
             where: { userId: req.user.id, modelId }
@@ -778,6 +825,37 @@ router.post('/messages', async (req, res) => {
             });
         }
 
+        let uploadResult = null;
+        let uploadTimestamp = null;
+        if (mediaFile) {
+            uploadTimestamp = new Date().toISOString();
+            uploadResult = await uploadFile(mediaFile.buffer, mediaFile.originalname, mediaFile.mimetype, {
+                folder: 'chats-photos-videos',
+                metaData: {
+                    'x-amz-meta-sender-id': req.user.id,
+                    'x-amz-meta-receiver-id': managerUserId,
+                    'x-amz-meta-chat-id': chat.id,
+                    'x-amz-meta-timestamp': uploadTimestamp,
+                    'x-amz-meta-file-type': mediaFile.mimetype
+                }
+            });
+
+            if (!uploadResult.success) {
+                return res.status(500).json({ message: 'Failed to upload media', error: uploadResult.error });
+            }
+        }
+
+        const serializedMetadata = mediaFile ? JSON.stringify({
+            originalName: mediaFile.originalname,
+            mimeType: mediaFile.mimetype,
+            senderUserId: req.user.id,
+            receiverUserId: managerUserId,
+            chatId: chat.id,
+            uploadedAt: uploadTimestamp,
+            fileType: mediaFile.mimetype.startsWith('video/') ? 'VIDEO' : 'IMAGE',
+            fileUrl: uploadResult?.url
+        }) : null;
+
         // Create message with chatId
         const message = await prisma.message.create({
             data: {
@@ -785,22 +863,170 @@ router.post('/messages', async (req, res) => {
                 modelId,
                 chatId: chat.id,
                 content,
-                isFromUser: true
+                isFromUser: true,
+                senderUserId: req.user.id,
+                receiverUserId: managerUserId,
+                media: mediaFile ? {
+                    create: {
+                        bucket: uploadResult.bucket,
+                        objectName: uploadResult.objectName,
+                        url: uploadResult.url,
+                        type: mediaFile.mimetype.startsWith('video/') ? 'VIDEO' : 'IMAGE',
+                        size: mediaFile.size,
+                        metadata: serializedMetadata,
+                        isLocked: false,
+                        lockPrice: 0
+                    }
+                } : undefined
             },
             include: {
                 user: { select: { id: true, email: true } },
-                model: { select: { id: true, name: true, surname: true } }
+                model: { select: { id: true, name: true, surname: true } },
+                media: {
+                    include: { unlocks: true }
+                }
             }
         });
 
         // Emit to socket.io
         const io = req.app.get('io');
-        if (io) io.to(`chat_${chat.id}`).emit('new_message', message);
+        const formattedMessage = formatMessage(message, { currentUserId: req.user.id });
+        if (io) io.to(`chat_${chat.id}`).emit('new_message', formattedMessage);
 
-        res.json({ message });
+        res.json({ message: formattedMessage });
     } catch (error) {
         console.error('Send message error:', error);
         res.status(500).json({ message: 'Failed to send message' });
+    }
+});
+
+// ======================================================
+// 🔓 Unlock locked chat media
+// ======================================================
+router.post('/media/:mediaId/unlock', async (req, res) => {
+    try {
+        const { mediaId } = req.params;
+        const { paymentData } = req.body || {};
+
+        if (!paymentData || !paymentData.cardNumber || !paymentData.expiryDate || !paymentData.cvv) {
+            return res.status(400).json({ message: 'Payment data is required' });
+        }
+
+        const media = await prisma.messageMedia.findUnique({
+            where: { id: mediaId },
+            include: {
+                message: {
+                    include: {
+                        chat: true,
+                        model: {
+                            include: {
+                                manager: {
+                                    include: {
+                                        user: {
+                                            select: { id: true }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        user: {
+                            select: { id: true }
+                        },
+                        media: {
+                            include: {
+                                unlocks: true
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!media || !media.message) {
+            return res.status(404).json({ message: 'Media not found' });
+        }
+
+        if (!media.isLocked) {
+            return res.status(400).json({ message: 'Media is already unlocked' });
+        }
+
+        const chat = media.message.chat;
+        if (!chat || chat.userId !== req.user.id) {
+            return res.status(403).json({ message: 'You do not have access to unlock this media' });
+        }
+
+        const unlockExists = await prisma.messageMediaUnlock.findUnique({
+            where: {
+                mediaId_userId: {
+                    mediaId,
+                    userId: req.user.id
+                }
+            }
+        });
+
+        if (unlockExists) {
+            return res.status(200).json({ message: 'Media already unlocked' });
+        }
+
+        // Ensure user has active subscription
+        const subscription = await prisma.subscription.findFirst({
+            where: {
+                userId: req.user.id,
+                modelId: media.message.modelId,
+                isActive: true,
+                endDate: { gte: new Date() }
+            }
+        });
+
+        if (!subscription) {
+            return res.status(403).json({ message: 'No active subscription for this model' });
+        }
+
+        const lockPrice = media.lockPrice || 0;
+
+        // Simulate payment processing
+        await new Promise((resolve) => setTimeout(resolve, 800));
+
+        await prisma.messageMediaUnlock.create({
+            data: {
+                mediaId,
+                userId: req.user.id,
+                amountPaid: lockPrice
+            }
+        });
+
+        const updatedMessage = await prisma.message.findUnique({
+            where: { id: media.messageId },
+            include: {
+                user: { select: { id: true, email: true } },
+                model: { select: { id: true, name: true, surname: true } },
+                media: {
+                    include: { unlocks: true }
+                }
+            }
+        });
+
+        const formattedMessageForUser = formatMessage(updatedMessage, { currentUserId: req.user.id });
+        const formattedMessageForManager = formatMessage(updatedMessage, { viewingAsManager: true });
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to(`chat_${chat.id}`).emit('media_unlocked', {
+                mediaId,
+                messageForUser: formattedMessageForUser,
+                messageForManager: formattedMessageForManager,
+                unlockedBy: req.user.id
+            });
+        }
+
+        res.json({
+            message: formattedMessageForUser,
+            amountPaid: lockPrice
+        });
+
+    } catch (error) {
+        console.error('Unlock media error:', error);
+        res.status(500).json({ message: 'Failed to unlock media' });
     }
 });
 
@@ -858,6 +1084,7 @@ router.get('/plans/:planId/media', async (req, res) => {
 router.get('/models/:modelId/media', async (req, res) => {
     try {
         const { modelId } = req.params;
+        const countsOnly = req.query.countsOnly === 'true';
 
         // Check if user is blocked by the model's manager
         const isBlocked = await isUserBlockedByModel(req.user.id, modelId);
@@ -886,6 +1113,29 @@ router.get('/models/:modelId/media', async (req, res) => {
 
         const planIds = activeSubs.map(s => s.planId);
 
+        if (countsOnly) {
+            const grouped = await prisma.media.groupBy({
+                by: ['type'],
+                where: { planId: { in: planIds }, isActive: true },
+                _count: { _all: true }
+            });
+
+            const counts = grouped.reduce((acc, item) => {
+                const count = item._count?._all || 0;
+                if (item.type === 'IMAGE') {
+                    acc.images += count;
+                } else if (item.type === 'VIDEO') {
+                    acc.videos += count;
+                } else {
+                    acc.other += count;
+                }
+                acc.total += count;
+                return acc;
+            }, { images: 0, videos: 0, other: 0, total: 0 });
+
+            return res.json({ media: [], plans: [], counts });
+        }
+
         // Fetch media for all subscribed plans
         const media = await prisma.media.findMany({
             where: { planId: { in: planIds }, isActive: true },
@@ -898,7 +1148,19 @@ router.get('/models/:modelId/media', async (req, res) => {
             select: { id: true, name: true, description: true, price: true, duration: true }
         });
 
-        res.json({ media, plans });
+        const counts = media.reduce((acc, item) => {
+            if (item.type === 'IMAGE') {
+                acc.images += 1;
+            } else if (item.type === 'VIDEO') {
+                acc.videos += 1;
+            } else {
+                acc.other += 1;
+            }
+            acc.total += 1;
+            return acc;
+        }, { images: 0, videos: 0, other: 0, total: 0 });
+
+        res.json({ media, plans, counts });
     } catch (error) {
         console.error('Get model media (aggregate) error:', error);
         res.status(500).json({ message: 'Failed to fetch media' });
