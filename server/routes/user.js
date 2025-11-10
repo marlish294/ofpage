@@ -378,6 +378,7 @@ const prisma = require('../config/database');
 const { authenticateToken, requireRole } = require('../middleware/auth');
 const { uploadFile } = require('../config/minio');
 const { formatMessages, formatMessage } = require('../utils/messageFormatter');
+const { buildSubscriptionEntry, buildUnlockEntry, emitRevenueUpdate } = require('../utils/revenue');
 
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -571,6 +572,12 @@ router.post('/subscribe', async (req, res) => {
                         price: true,
                         duration: true
                     }
+                },
+                user: {
+                    select: {
+                        id: true,
+                        email: true
+                    }
                 }
             }
         });
@@ -601,6 +608,11 @@ router.post('/subscribe', async (req, res) => {
             }
         } catch (cleanupErr) {
             console.warn('Chat cleanup warning:', cleanupErr?.message || cleanupErr);
+        }
+
+        const revenueEntry = buildSubscriptionEntry(subscription);
+        if (revenueEntry) {
+            emitRevenueUpdate(revenueEntry);
         }
 
         res.status(201).json({
@@ -987,11 +999,36 @@ router.post('/media/:mediaId/unlock', async (req, res) => {
         // Simulate payment processing
         await new Promise((resolve) => setTimeout(resolve, 800));
 
-        await prisma.messageMediaUnlock.create({
+        const unlockRecord = await prisma.messageMediaUnlock.create({
             data: {
                 mediaId,
                 userId: req.user.id,
                 amountPaid: lockPrice
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        email: true
+                    }
+                },
+                media: {
+                    include: {
+                        message: {
+                            select: {
+                                id: true,
+                                modelId: true,
+                                model: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        surname: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         });
 
@@ -1017,6 +1054,11 @@ router.post('/media/:mediaId/unlock', async (req, res) => {
                 messageForManager: formattedMessageForManager,
                 unlockedBy: req.user.id
             });
+        }
+
+        const unlockEntry = buildUnlockEntry(unlockRecord);
+        if (unlockEntry) {
+            emitRevenueUpdate(unlockEntry);
         }
 
         res.json({

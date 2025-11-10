@@ -79,6 +79,12 @@
             </router-link>
           </li>
           <li v-if="isManager" class="nav-item">
+            <router-link class="nav-link" to="/manager/revenue" style="color: #00aff0 !important; text-decoration: none;">
+              <i class="fas fa-chart-line me-1" style="color: #00aff0 !important;"></i>
+              Revenue
+            </router-link>
+          </li>
+          <li v-if="isManager" class="nav-item">
             <router-link class="nav-link" to="/manager/subscribers" style="color: #00aff0 !important; text-decoration: none;">
               <i class="fas fa-users me-1" style="color: #00aff0 !important;"></i>
               Subscribers
@@ -96,6 +102,12 @@
             <router-link class="nav-link" to="/admin/models" style="color: #00aff0 !important; text-decoration: none;">
               <i class="fas fa-images me-1" style="color: #00aff0 !important;"></i>
               Models
+            </router-link>
+          </li>
+          <li v-if="isAdmin" class="nav-item">
+            <router-link class="nav-link" to="/admin/revenue" style="color: #00aff0 !important; text-decoration: none;">
+              <i class="fas fa-chart-line me-1" style="color: #00aff0 !important;"></i>
+              Revenue
             </router-link>
           </li>
           <li v-if="isAdmin" class="nav-item">

@@ -302,12 +302,14 @@ import ManagerDashboard from '../views/manager/Dashboard.vue'
 import ManagerModel from '../views/manager/Model.vue'
 import ManagerChats from '../views/manager/Chats.vue'
 import ManagerSubscribers from '../views/manager/Subscribers.vue'
+import ManagerRevenue from '../views/manager/Revenue.vue'
 
 // Admin views
 import AdminDashboard from '../views/admin/Dashboard.vue'
 import AdminUsers from '../views/admin/Users.vue'
 import AdminModels from '../views/admin/Models.vue'
 import AdminChats from '../views/admin/Chats.vue'
+import AdminRevenue from '../views/admin/Revenue.vue'
 
 const routes = [
     { path: '/', name: 'SocialHome', component: SocialHome },
@@ -328,11 +330,13 @@ const routes = [
     { path: '/manager/model', name: 'ManagerModel', component: ManagerModel, meta: { requiresAuth: true, role: 'MANAGER' } },
     { path: '/manager/chats', name: 'ManagerChats', component: ManagerChats, meta: { requiresAuth: true, role: 'MANAGER' } },
     { path: '/manager/subscribers', name: 'ManagerSubscribers', component: ManagerSubscribers, meta: { requiresAuth: true, role: 'MANAGER' } },
+    { path: '/manager/revenue', name: 'ManagerRevenue', component: ManagerRevenue, meta: { requiresAuth: true, role: 'MANAGER' } },
 
     // Admin routes
     { path: '/admin', name: 'AdminDashboard', component: AdminDashboard, meta: { requiresAuth: true, role: 'ADMIN' } },
     { path: '/admin/users', name: 'AdminUsers', component: AdminUsers, meta: { requiresAuth: true, role: 'ADMIN' } },
     { path: '/admin/models', name: 'AdminModels', component: AdminModels, meta: { requiresAuth: true, role: 'ADMIN' } },
+    { path: '/admin/revenue', name: 'AdminRevenue', component: AdminRevenue, meta: { requiresAuth: true, role: 'ADMIN' } },
     { path: '/admin/chats', name: 'AdminChats', component: AdminChats, meta: { requiresAuth: true, role: 'ADMIN' } },
 
     // Catch all

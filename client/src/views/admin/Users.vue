@@ -280,7 +280,21 @@ export default {
         text: `Are you sure you want to ${confirmText}?`,
         showCancelButton: true,
         confirmButtonText: `Yes, ${action}`,
-        cancelButtonText: 'Cancel'
+        cancelButtonText: 'Cancel',
+        customClass: {
+          icon: 'admin-warning-icon'
+        },
+        didOpen: () => {
+          const icon = document.querySelector('.admin-warning-icon')
+          if (icon) {
+            icon.style.borderColor = '#00aff0'
+            icon.style.color = '#00aff0'
+            const iconContent = icon.querySelector('.swal2-icon-content')
+            if (iconContent) {
+              iconContent.style.color = '#00aff0'
+            }
+          }
+        }
       })
 
       if (result.isConfirmed) {
@@ -352,3 +366,16 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.admin-warning-icon,
+.swal2-warning.admin-warning-icon {
+  border-color: #00aff0 !important;
+  color: #00aff0 !important;
+}
+
+.admin-warning-icon .swal2-icon-content,
+.swal2-warning.admin-warning-icon .swal2-icon-content {
+  color: #00aff0 !important;
+}
+</style>

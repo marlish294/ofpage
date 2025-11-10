@@ -4,6 +4,7 @@ const prisma = require('../config/database');
 const { authenticateToken, requireManager } = require('../middleware/auth');
 const { uploadFile } = require('../config/minio');
 const { formatMessages, formatMessage } = require('../utils/messageFormatter');
+const { buildSubscriptionEntry, buildUnlockEntry } = require('../utils/revenue');
 
 const router = express.Router();
 
@@ -858,6 +859,379 @@ router.get('/dashboard', async (req, res) => {
     } catch (error) {
         console.error('Get dashboard error:', error);
         res.status(500).json({ message: 'Failed to fetch dashboard data' });
+    }
+});
+
+router.get('/revenue/summary', async (req, res) => {
+    try {
+        const manager = await prisma.manager.findUnique({
+            where: { userId: req.user.id },
+            include: { model: true }
+        });
+
+        if (!manager || !manager.model) {
+            return res.status(404).json({ message: 'Model not found' });
+        }
+
+        const modelId = manager.model.id;
+        const now = new Date();
+        const requestedYear = parseInt(req.query.year, 10);
+        const year = Number.isInteger(requestedYear) ? requestedYear : now.getFullYear();
+
+        const startOfYear = new Date(year, 0, 1);
+        const startOfNextYear = new Date(year + 1, 0, 1);
+
+        const [
+            subscriptions,
+            unlocks,
+            earliestSubscription,
+            earliestUnlock,
+            latestSubscription,
+            latestUnlock,
+            subscriberRecords
+        ] = await Promise.all([
+            prisma.subscription.findMany({
+                where: {
+                    modelId,
+                    createdAt: {
+                        gte: startOfYear,
+                        lt: startOfNextYear
+                    }
+                },
+                select: {
+                    amountPaid: true,
+                    createdAt: true
+                }
+            }),
+            prisma.messageMediaUnlock.findMany({
+                where: {
+                    media: {
+                        message: {
+                            modelId
+                        }
+                    },
+                    createdAt: {
+                        gte: startOfYear,
+                        lt: startOfNextYear
+                    }
+                },
+                select: {
+                    amountPaid: true,
+                    createdAt: true
+                }
+            }),
+            prisma.subscription.findFirst({
+                where: { modelId },
+                orderBy: { createdAt: 'asc' },
+                select: { createdAt: true }
+            }),
+            prisma.messageMediaUnlock.findFirst({
+                where: {
+                    media: {
+                        message: {
+                            modelId
+                        }
+                    }
+                },
+                orderBy: { createdAt: 'asc' },
+                select: { createdAt: true }
+            }),
+            prisma.subscription.findFirst({
+                where: { modelId },
+                orderBy: { createdAt: 'desc' },
+                select: { createdAt: true }
+            }),
+            prisma.messageMediaUnlock.findFirst({
+                where: {
+                    media: {
+                        message: {
+                            modelId
+                        }
+                    }
+                },
+                orderBy: { createdAt: 'desc' },
+                select: { createdAt: true }
+            }),
+            prisma.subscription.findMany({
+                where: {
+                    modelId,
+                    isActive: true
+                },
+                distinct: ['userId'],
+                select: { userId: true }
+            })
+        ]);
+
+        const subscriberCount = subscriberRecords.length;
+
+        const monthLabels = Array.from({ length: 12 }, (_, index) =>
+            new Date(year, index).toLocaleString('default', { month: 'long' })
+        );
+
+        const months = Array.from({ length: 12 }, (_, index) => ({
+            month: index + 1,
+            label: monthLabels[index],
+            total: 0,
+            subscriptionTotal: 0,
+            unlockTotal: 0,
+            growth: null
+        }));
+
+        const accumulate = (records, key) => {
+            records.forEach(record => {
+                const date = new Date(record.createdAt);
+                if (Number.isNaN(date.getTime())) {
+                    return;
+                }
+                const monthIndex = date.getMonth();
+                const amount = record.amountPaid || 0;
+
+                months[monthIndex].total += amount;
+                if (key === 'subscription') {
+                    months[monthIndex].subscriptionTotal += amount;
+                } else {
+                    months[monthIndex].unlockTotal += amount;
+                }
+            });
+        };
+
+        accumulate(subscriptions, 'subscription');
+        accumulate(unlocks, 'unlock');
+
+        months.forEach((month, index) => {
+            if (index === 0) {
+                month.growth = null;
+                return;
+            }
+            const previous = months[index - 1];
+            if (!previous || previous.total === 0) {
+                month.growth = previous && previous.total === 0 && month.total === 0 ? 0 : null;
+                return;
+            }
+
+            const delta = month.total - previous.total;
+            month.growth = (delta / previous.total) * 100;
+        });
+
+        const totals = months.reduce(
+            (accumulator, month) => {
+                accumulator.totalRevenue += month.total;
+                accumulator.subscriptionRevenue += month.subscriptionTotal;
+                accumulator.unlockRevenue += month.unlockTotal;
+                return accumulator;
+            },
+            {
+                totalRevenue: 0,
+                subscriptionRevenue: 0,
+                unlockRevenue: 0
+            }
+        );
+
+        const collector = [];
+        if (earliestSubscription?.createdAt) collector.push(new Date(earliestSubscription.createdAt));
+        if (earliestUnlock?.createdAt) collector.push(new Date(earliestUnlock.createdAt));
+        if (latestSubscription?.createdAt) collector.push(new Date(latestSubscription.createdAt));
+        if (latestUnlock?.createdAt) collector.push(new Date(latestUnlock.createdAt));
+
+        let minYear = year;
+        let maxYear = year;
+
+        if (collector.length > 0) {
+            const validDates = collector.filter(date => !Number.isNaN(date.getTime()));
+            if (validDates.length > 0) {
+                minYear = Math.min(...validDates.map(date => date.getFullYear()));
+                maxYear = Math.max(...validDates.map(date => date.getFullYear()));
+            }
+        }
+
+        const availableYears = [];
+        for (let cursor = minYear; cursor <= maxYear; cursor += 1) {
+            availableYears.push(cursor);
+        }
+
+        if (!availableYears.includes(year)) {
+            availableYears.push(year);
+        }
+
+        availableYears.sort((a, b) => a - b);
+
+        res.json({
+            year,
+            months,
+            totals,
+            availableYears,
+            subscriberCount
+        });
+    } catch (error) {
+        console.error('Get manager revenue summary error:', error);
+        res.status(500).json({ message: 'Failed to fetch revenue summary' });
+    }
+});
+
+router.get('/revenue/entries', async (req, res) => {
+    try {
+        const manager = await prisma.manager.findUnique({
+            where: { userId: req.user.id },
+            include: { model: true }
+        });
+
+        if (!manager || !manager.model) {
+            return res.status(404).json({ message: 'Model not found' });
+        }
+
+        const modelId = manager.model.id;
+        const {
+            type,
+            startDate,
+            endDate,
+            search = '',
+            sortBy = 'date',
+            sortOrder = 'desc',
+            page = 1,
+            limit = 25
+        } = req.query;
+
+        const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 25, 1), 100);
+        const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
+        const offset = (parsedPage - 1) * parsedLimit;
+
+        const startDateObj = startDate ? new Date(startDate) : null;
+        const endDateObj = endDate ? new Date(endDate) : null;
+
+        if (startDateObj && Number.isNaN(startDateObj.getTime())) {
+            return res.status(400).json({ message: 'Invalid startDate value' });
+        }
+
+        if (endDateObj && Number.isNaN(endDateObj.getTime())) {
+            return res.status(400).json({ message: 'Invalid endDate value' });
+        }
+
+        if (startDateObj && endDateObj && startDateObj > endDateObj) {
+            return res.status(400).json({ message: 'startDate cannot be after endDate' });
+        }
+
+        const dateFilter = {};
+        if (startDateObj) {
+            dateFilter.gte = startDateObj;
+        }
+        if (endDateObj) {
+            const inclusiveEnd = new Date(endDateObj);
+            inclusiveEnd.setHours(23, 59, 59, 999);
+            dateFilter.lte = inclusiveEnd;
+        }
+
+        const subscriptionWhere = { modelId };
+        const unlockWhere = {
+            media: {
+                message: {
+                    modelId
+                }
+            }
+        };
+
+        if (Object.keys(dateFilter).length > 0) {
+            subscriptionWhere.createdAt = dateFilter;
+            unlockWhere.createdAt = dateFilter;
+        }
+
+        const fetchSubscriptions = type === 'unlock'
+            ? Promise.resolve([])
+            : prisma.subscription.findMany({
+                where: subscriptionWhere,
+                include: {
+                    model: {
+                        select: { id: true, name: true, surname: true }
+                    },
+                    user: {
+                        select: { id: true, email: true }
+                    },
+                    plan: {
+                        select: { id: true, name: true }
+                    }
+                }
+            });
+
+        const fetchUnlocks = type === 'subscription'
+            ? Promise.resolve([])
+            : prisma.messageMediaUnlock.findMany({
+                where: unlockWhere,
+                include: {
+                    user: {
+                        select: { id: true, email: true }
+                    },
+                    media: {
+                        include: {
+                            message: {
+                                select: {
+                                    id: true,
+                                    modelId: true,
+                                    model: {
+                                        select: { id: true, name: true, surname: true }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+        const [subscriptions, unlocks] = await Promise.all([fetchSubscriptions, fetchUnlocks]);
+
+        const entries = [
+            ...subscriptions.map(buildSubscriptionEntry),
+            ...unlocks.map(buildUnlockEntry)
+        ].filter(Boolean);
+
+        const normalizedSearch = search.trim().toLowerCase();
+        const searchedEntries = normalizedSearch
+            ? entries.filter(entry => {
+                const modelName = entry.modelName?.toLowerCase() || '';
+                const userName = entry.userName?.toLowerCase() || '';
+                return modelName.includes(normalizedSearch) || userName.includes(normalizedSearch);
+            })
+            : entries;
+
+        const orderedEntries = searchedEntries.sort((a, b) => {
+            const direction = sortOrder === 'asc' ? 1 : -1;
+
+            if (sortBy === 'amount') {
+                return (a.amount - b.amount) * direction;
+            }
+
+            const aDate = new Date(a.date).getTime();
+            const bDate = new Date(b.date).getTime();
+            return (aDate - bDate) * direction;
+        });
+
+        const totals = orderedEntries.reduce(
+            (accumulator, entry) => {
+                const amount = entry.amount || 0;
+                accumulator.total += amount;
+                if (entry.type === 'subscription') {
+                    accumulator.subscription += amount;
+                } else if (entry.type === 'unlock') {
+                    accumulator.unlock += amount;
+                }
+                return accumulator;
+            },
+            { total: 0, subscription: 0, unlock: 0 }
+        );
+
+        const paginatedEntries = orderedEntries.slice(offset, offset + parsedLimit);
+
+        res.json({
+            entries: paginatedEntries,
+            totals,
+            pagination: {
+                page: parsedPage,
+                limit: parsedLimit,
+                total: orderedEntries.length,
+                pages: Math.max(Math.ceil(orderedEntries.length / parsedLimit), 1)
+            }
+        });
+    } catch (error) {
+        console.error('Get manager revenue entries error:', error);
+        res.status(500).json({ message: 'Failed to fetch revenue entries' });
     }
 });
 

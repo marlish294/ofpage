@@ -159,7 +159,21 @@ export default {
         text: `Are you sure you want to ${confirmText}?`,
         showCancelButton: true,
         confirmButtonText: `Yes, ${action}`,
-        cancelButtonText: 'Cancel'
+        cancelButtonText: 'Cancel',
+        customClass: {
+          icon: 'admin-warning-icon'
+        },
+        didOpen: () => {
+          const icon = document.querySelector('.admin-warning-icon')
+          if (icon) {
+            icon.style.borderColor = '#00aff0'
+            icon.style.color = '#00aff0'
+            const iconContent = icon.querySelector('.swal2-icon-content')
+            if (iconContent) {
+              iconContent.style.color = '#00aff0'
+            }
+          }
+        }
       })
 
       if (result.isConfirmed) {

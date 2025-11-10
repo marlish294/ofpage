@@ -28,6 +28,7 @@ initializeMinIO();
 
 // Initialize Socket.IO
 initializeSocketIO(io);
+app.set('io', io);
 
 // Rate limiting
 const limiter = rateLimit({
