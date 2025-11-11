@@ -17,14 +17,23 @@
       <button
         class="navbar-toggler"
         type="button"
-        data-bs-toggle="collapse"
-        data-bs-target="#navbarNav"
+        aria-controls="navbarNav"
+        :aria-expanded="navOpen ? 'true' : 'false'"
+        aria-label="Toggle navigation"
         style="border: none;"
+        @click="toggleMobileNav"
       >
         <span class="navbar-toggler-icon"></span>
       </button>
 
-      <div class="collapse navbar-collapse" id="navbarNav">
+      <div
+        class="navbar-collapse"
+        :class="{ show: navOpen, collapsing: isCollapsing, collapse: true }"
+        id="navbarNav"
+        ref="navbarNav"
+        :style="collapseStyle"
+        @transitionend="handleTransitionEnd"
+      >
         <!-- Home - Left Side -->
         <ul class="navbar-nav me-auto">
           <li class="nav-item">
@@ -174,7 +183,10 @@ export default {
   name: 'NavBar',
   data() {
     return {
-      dropdownOpen: false
+      dropdownOpen: false,
+      navOpen: false,
+      isCollapsing: false,
+      collapseHeight: null
     }
   },
   computed: {
@@ -218,6 +230,14 @@ export default {
       const isAdminPage = path.startsWith('/admin')
       
       return isUserPage && !isManagerPage && !isAdminPage
+    },
+    collapseStyle() {
+      if (!this.isCollapsing) {
+        return null
+      }
+      return this.navOpen
+        ? { height: this.collapseHeight ? `${this.collapseHeight}px` : 'auto', overflow: 'hidden' }
+        : { height: '0px', overflow: 'hidden' }
     }
   },
   mounted() {
@@ -242,8 +262,67 @@ export default {
       this.initializeDropdowns()
     })
   },
+  
+  watch: {
+    $route() {
+      this.closeMobileNav()
+    }
+  },
   methods: {
     ...mapActions('auth', ['logout']),
+
+    toggleMobileNav() {
+      const navEl = this.$refs.navbarNav
+      if (!navEl) return
+
+      if (this.isCollapsing) {
+        // ignore while animating
+        return
+      }
+
+      if (this.navOpen) {
+        // collapse
+        this.isCollapsing = true
+        this.collapseHeight = navEl.scrollHeight
+        requestAnimationFrame(() => {
+          this.navOpen = false
+          this.collapseHeight = navEl.scrollHeight
+          requestAnimationFrame(() => {
+            this.collapseHeight = 0
+          })
+        })
+      } else {
+        this.isCollapsing = true
+        this.collapseHeight = 0
+        requestAnimationFrame(() => {
+          this.collapseHeight = navEl.scrollHeight
+          this.navOpen = true
+        })
+      }
+    },
+
+    handleTransitionEnd(event) {
+      if (event.target !== this.$refs.navbarNav) return
+      if (!this.isCollapsing) return
+      this.isCollapsing = false
+      this.collapseHeight = null
+    },
+
+    closeMobileNav() {
+      if (!this.navOpen) return
+      const navEl = this.$refs.navbarNav
+      if (!navEl) return
+      if (this.isCollapsing) return
+
+      this.isCollapsing = true
+      this.collapseHeight = navEl.scrollHeight
+      requestAnimationFrame(() => {
+        this.navOpen = false
+        requestAnimationFrame(() => {
+          this.collapseHeight = 0
+        })
+      })
+    },
 
     initializeDropdowns() {
       try {
@@ -436,10 +515,10 @@ export default {
                     const button = document.getElementById('toggleCurrentPassword');
                     if(input.type === 'password') {
                       input.type = 'text';
-                      button.innerHTML = '<i class=\\'fas fa-eye-slash\\'></i>';
+                      button.innerHTML = '<i class=\'fas fa-eye-slash\'></i>';
                     } else {
                       input.type = 'password';
-                      button.innerHTML = '<i class=\\'fas fa-eye\\'></i>';
+                      button.innerHTML = '<i class=\'fas fa-eye\'></i>';
                     }
                   "
                 >
@@ -469,10 +548,10 @@ export default {
                     const button = document.getElementById('toggleNewPassword');
                     if(input.type === 'password') {
                       input.type = 'text';
-                      button.innerHTML = '<i class=\\'fas fa-eye-slash\\'></i>';
+                      button.innerHTML = '<i class=\'fas fa-eye-slash\'></i>';
                     } else {
                       input.type = 'password';
-                      button.innerHTML = '<i class=\\'fas fa-eye\\'></i>';
+                      button.innerHTML = '<i class=\'fas fa-eye\'></i>';
                     }
                   "
                 >
@@ -502,10 +581,10 @@ export default {
                     const button = document.getElementById('toggleConfirmPassword');
                     if(input.type === 'password') {
                       input.type = 'text';
-                      button.innerHTML = '<i class=\\'fas fa-eye-slash\\'></i>';
+                      button.innerHTML = '<i class=\'fas fa-eye-slash\'></i>';
                     } else {
                       input.type = 'password';
-                      button.innerHTML = '<i class=\\'fas fa-eye\\'></i>';
+                      button.innerHTML = '<i class=\'fas fa-eye\'></i>';
                     }
                   "
                 >

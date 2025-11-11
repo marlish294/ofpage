@@ -4,6 +4,7 @@ const prisma = require('../config/database');
 const { authenticateToken, requireAdmin } = require('../middleware/auth');
 const { formatMessages } = require('../utils/messageFormatter');
 const { buildSubscriptionEntry, buildUnlockEntry } = require('../utils/revenue');
+const { getAdminEvents } = require('../utils/adminEvents');
 
 const router = express.Router();
 
@@ -11,63 +12,15 @@ const router = express.Router();
 router.use(authenticateToken);
 router.use(requireAdmin);
 
-// Get dashboard overview
-// router.get('/dashboard', async (req, res) => {
-//     try {
-//         // Total revenue across all managers
-//         const allSubscriptions = await prisma.subscription.findMany({
-//             where: { isActive: true },
-//             include: {
-//                 plan: {
-//                     select: { price: true }
-//                 }
-//             }
-//         });
+router.get('/activity-events', (req, res) => {
+    try {
+        res.json({ events: getAdminEvents() });
+    } catch (error) {
+        console.error('Get admin activity events error:', error);
+        res.status(500).json({ message: 'Failed to fetch activity events' });
+    }
+});
 
-//         const totalRevenue = allSubscriptions.reduce((sum, sub) => sum + sub.plan.price, 0);
-
-//         // Total subscriber count
-//         // const totalSubscribers = await prisma.subscription.count({
-//         //     where: { isActive: true },
-//         //     distinct: ['userId']
-//         // });
-//         const distinctSubscribers = await prisma.subscription.findMany({
-//             where: { isActive: true },
-//             distinct: ['userId'],
-//             select: { userId: true }
-//         });
-//         const totalSubscribers = distinctSubscribers.length;
-
-//         // Total managers count
-//         const totalManagers = await prisma.manager.count({
-//             where: { isApproved: true }
-//         });
-
-//         // Total models count
-//         const totalModels = await prisma.model.count({
-//             where: { isActive: true }
-//         });
-
-//         // Pending manager approvals
-//         const pendingManagers = await prisma.manager.count({
-//             where: { isApproved: false }
-//         });
-
-//         res.json({
-//             stats: {
-//                 totalRevenue,
-//                 totalSubscribers,
-//                 totalManagers,
-//                 totalModels,
-//                 pendingManagers
-//             }
-//         });
-
-//     } catch (error) {
-//         console.error('Get admin dashboard error:', error);
-//         res.status(500).json({ message: 'Failed to fetch dashboard data' });
-//     }
-// });
 // Get dashboard overview
 router.get('/dashboard', async (req, res) => {
     try {

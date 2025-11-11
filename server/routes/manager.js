@@ -5,6 +5,7 @@ const { authenticateToken, requireManager } = require('../middleware/auth');
 const { uploadFile } = require('../config/minio');
 const { formatMessages, formatMessage } = require('../utils/messageFormatter');
 const { buildSubscriptionEntry, buildUnlockEntry } = require('../utils/revenue');
+const { emitAdminEvent } = require('../utils/adminEvents');
 
 const router = express.Router();
 
@@ -1540,16 +1541,34 @@ router.post('/messages', upload.single('media'), async (req, res) => {
             return res.status(404).json({ message: 'Model not found' });
         }
 
+        const subscriberUser = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, email: true }
+        });
+
+        if (!subscriberUser) {
+            return res.status(404).json({ message: 'Subscriber not found' });
+        }
+
         const modelId = manager.model.id;
 
         // Ensure chat exists
-        const chat = await prisma.chat.upsert({
+        let chat = await prisma.chat.findFirst({
             where: {
-                userId_modelId: { userId, modelId }
-            },
-            update: {},
-            create: { userId, modelId }
+                userId,
+                modelId
+            }
         });
+        let chatCreated = false;
+        if (!chat) {
+            chat = await prisma.chat.create({
+                data: {
+                    userId,
+                    modelId
+                }
+            });
+            chatCreated = true;
+        }
 
         // Create message
         const isLocked = req.body.isLocked === 'true' || req.body.isLocked === true;
@@ -1629,24 +1648,53 @@ router.post('/messages', upload.single('media'), async (req, res) => {
 
         if (io) io.to(`chat_${chat.id}`).emit('new_message', formattedMessage);
 
+        if (chatCreated) {
+            emitAdminEvent({
+                type: 'chat.started',
+                title: 'New chat started',
+                description: `${req.user.email} started a chat with ${subscriberUser.email} for ${manager.model.name}.`,
+                icon: 'fas fa-comments',
+                color: '#00aff0',
+                data: {
+                    chatId: chat.id,
+                    managerUserId: req.user.id,
+                    managerEmail: req.user.email,
+                    userId: subscriberUser.id,
+                    userEmail: subscriberUser.email,
+                    modelId,
+                    modelName: manager.model.name
+                },
+                timestamp: Date.now()
+            });
+        }
+
+        if (mediaFile) {
+            const mediaType = mediaFile.mimetype.startsWith('video/') ? 'video' : 'photo';
+            emitAdminEvent({
+                type: 'chat.media_uploaded',
+                title: 'Chat media uploaded',
+                description: `${req.user.email} sent a ${mediaType}${isLocked ? ' (locked)' : ''} to ${subscriberUser.email}.`,
+                icon: mediaType === 'video' ? 'fas fa-video' : 'fas fa-image',
+                color: '#6f42c1',
+                data: {
+                    chatId: chat.id,
+                    messageId: message.id,
+                    managerUserId: req.user.id,
+                    managerEmail: req.user.email,
+                    userId: subscriberUser.id,
+                    userEmail: subscriberUser.email,
+                    modelId,
+                    modelName: manager.model.name,
+                    mediaType,
+                    locked: isLocked,
+                    lockPrice: isLocked ? lockPriceValue : 0
+                },
+                timestamp: Date.now()
+            });
+        }
+
         res.json({ message: formattedMessage });
-        //     } catch (error) {
-        //         console.error('Send message error:', error);
-        //         res.status(500).json({ message: 'Failed to send message' });
-        //     }
-        // });
-        // } catch (error) {
-        //     console.error('💥 Save model error (full):', error);
 
-        //     if (error.code) console.error('⚙️ Prisma error code:', error.code);
-        //     if (error.meta) console.error('📦 Prisma error meta:', error.meta);
-        //     if (error.message) console.error('🧾 Error message:', error.message);
-
-        //     res.status(500).json({
-        //         message: 'Failed to save model',
-        //         error: error.message || 'Unknown error'
-        //     });
-        // }
     } catch (error) {
         console.error('💥 Send message error (full):', error);
 

@@ -10,306 +10,306 @@
           <p style="color: #666666; font-size: 1rem; margin-bottom: 2rem;">Create and manage your model profile</p>
         </div>
       </div>
-    </div>
 
-    <div class="row">
-      <div class="col-lg-8">
-        <!-- Model Form -->
-        <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
-          <div class="card-header" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
-            <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
-              <i class="fas fa-user me-2" style="color: #00aff0;"></i>
-              Model Information
-            </h5>
-          </div>
-          <div class="card-body" style="padding: 1.5rem;">
-            <form @submit.prevent="saveModel">
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="name" class="form-label">First Name *</label>
-                    <input
-                      type="text"
-                      class="form-control"
-                      id="name"
-                      v-model="modelForm.name"
-                      required
+      <div class="row">
+        <div class="col-lg-8">
+          <!-- Model Form -->
+          <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+            <div class="card-header" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
+              <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
+                <i class="fas fa-user me-2" style="color: #00aff0;"></i>
+                Model Information
+              </h5>
+            </div>
+            <div class="card-body" style="padding: 1.5rem;">
+              <form @submit.prevent="saveModel">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="name" class="form-label">First Name *</label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="name"
+                        v-model="modelForm.name"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="surname" class="form-label">Last Name *</label>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="surname"
+                        v-model="modelForm.surname"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label for="bio" class="form-label">Bio *</label>
+                  <textarea
+                    class="form-control"
+                    id="bio"
+                    v-model="modelForm.bio"
+                    rows="4"
+                    required
+                  ></textarea>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-4">
+                    <div class="mb-3">
+                      <label for="age" class="form-label">Age *</label>
+                      <input
+                        type="number"
+                        class="form-control"
+                        id="age"
+                        v-model="modelForm.age"
+                        min="18"
+                        max="100"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="mb-3">
+                      <label for="hairColor" class="form-label">Hair Color *</label>
+                      <select class="form-select" id="hairColor" v-model="modelForm.hairColor" required>
+                        <option value="">Select hair color</option>
+                        <option value="Black">Black</option>
+                        <option value="Brown">Brown</option>
+                        <option value="Blonde">Blonde</option>
+                        <option value="Red">Red</option>
+                        <option value="Gray">Gray</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="col-md-4">
+                    <div class="mb-3">
+                      <label for="skinColor" class="form-label">Skin Color *</label>
+                      <select class="form-select" id="skinColor" v-model="modelForm.skinColor" required>
+                        <option value="">Select skin color</option>
+                        <option value="Fair">Fair</option>
+                        <option value="Light">Light</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Olive">Olive</option>
+                        <option value="Tan">Tan</option>
+                        <option value="Dark">Dark</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="photo" class="form-label">Profile Photo</label>
+                      <input
+                        type="file"
+                        class="form-control"
+                        id="photo"
+                        accept="image/*"
+                        @change="handlePhotoUpload"
+                      />
+                      <div class="form-text">Upload a high-quality photo (max 10MB)</div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="mb-3">
+                      <label for="video" class="form-label">Video Preview</label>
+                      <input
+                        type="file"
+                        class="form-control"
+                        id="video"
+                        accept="video/*"
+                        @change="handleVideoUpload"
+                      />
+                      <div class="form-text">Upload a preview video (max 10MB)</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div v-if="modelForm.photoUrl" class="mb-3">
+                  <label class="form-label">Current Photo</label>
+                  <div>
+                    <img
+                      :src="modelForm.photoUrl"
+                      class="img-thumbnail"
+                      style="max-width: 200px; max-height: 200px;"
+                      alt="Current photo"
                     />
                   </div>
                 </div>
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="surname" class="form-label">Last Name *</label>
-                    <input
-                      type="text"
-                      class="form-control"
-                      id="surname"
-                      v-model="modelForm.surname"
-                      required
-                    />
+
+                <div v-if="modelForm.videoUrl" class="mb-3">
+                  <label class="form-label">Current Video</label>
+                  <div>
+                    <video
+                      :src="modelForm.videoUrl"
+                      controls
+                      preload="metadata"
+                      crossorigin="anonymous"
+                      style="max-width: 300px; max-height: 300px; border-radius: 10px;"
+                    >
+                      Your browser does not support the video tag.
+                    </video>
                   </div>
                 </div>
-              </div>
 
-              <div class="mb-3">
-                <label for="bio" class="form-label">Bio *</label>
-                <textarea
-                  class="form-control"
-                  id="bio"
-                  v-model="modelForm.bio"
-                  rows="4"
-                  required
-                ></textarea>
-              </div>
 
-              <div class="row">
-                <div class="col-md-4">
-                  <div class="mb-3">
-                    <label for="age" class="form-label">Age *</label>
-                    <input
-                      type="number"
-                      class="form-control"
-                      id="age"
-                      v-model="modelForm.age"
-                      min="18"
-                      max="100"
-                      required
-                    />
-                  </div>
+
+
+
+
+                <div class="d-flex justify-content-between">
+                  <button type="button" class="btn" @click="resetForm" style="background-color: transparent; border: 2px solid #e0e0e0; color: #666666; font-weight: 600; border-radius: 8px; padding: 0.75rem 1.5rem; transition: all 0.2s ease;" @mouseover="e => { e.target.style.borderColor = '#00aff0'; e.target.style.color = '#00aff0'; }" @mouseout="e => { e.target.style.borderColor = '#e0e0e0'; e.target.style.color = '#666666'; }">
+                    <i class="fas fa-undo me-1"></i>
+                    Reset
+                  </button>
+                  <button type="submit" class="btn" :disabled="saving" :style="{ 'background-color': '#00aff0', 'border-color': '#00aff0', 'color': '#ffffff', 'font-weight': '600', 'border-radius': '8px', 'padding': '0.75rem 1.5rem', 'transition': 'all 0.2s ease', 'opacity': saving ? 0.5 : 1 }" @mouseover="e => { if(!saving) e.target.style.backgroundColor = '#0091ea'; }" @mouseout="e => { if(!saving) e.target.style.backgroundColor = '#00aff0'; }">
+                    <span v-if="saving" class="spinner-border spinner-border-sm me-1" style="width: 1rem; height: 1rem; border-width: 2px;"></span>
+                    <i v-else class="fas fa-save me-1"></i>
+                    {{ saving ? 'Saving...' : 'Save Model' }}
+                  </button>
                 </div>
-                <div class="col-md-4">
-                  <div class="mb-3">
-                    <label for="hairColor" class="form-label">Hair Color *</label>
-                    <select class="form-select" id="hairColor" v-model="modelForm.hairColor" required>
-                      <option value="">Select hair color</option>
-                      <option value="Black">Black</option>
-                      <option value="Brown">Brown</option>
-                      <option value="Blonde">Blonde</option>
-                      <option value="Red">Red</option>
-                      <option value="Gray">Gray</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="mb-3">
-                    <label for="skinColor" class="form-label">Skin Color *</label>
-                    <select class="form-select" id="skinColor" v-model="modelForm.skinColor" required>
-                      <option value="">Select skin color</option>
-                      <option value="Fair">Fair</option>
-                      <option value="Light">Light</option>
-                      <option value="Medium">Medium</option>
-                      <option value="Olive">Olive</option>
-                      <option value="Tan">Tan</option>
-                      <option value="Dark">Dark</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="photo" class="form-label">Profile Photo</label>
-                    <input
-                      type="file"
-                      class="form-control"
-                      id="photo"
-                      accept="image/*"
-                      @change="handlePhotoUpload"
-                    />
-                    <div class="form-text">Upload a high-quality photo (max 10MB)</div>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="video" class="form-label">Video Preview</label>
-                    <input
-                      type="file"
-                      class="form-control"
-                      id="video"
-                      accept="video/*"
-                      @change="handleVideoUpload"
-                    />
-                    <div class="form-text">Upload a preview video (max 10MB)</div>
-                  </div>
-                </div>
-              </div>
-
-              <div v-if="modelForm.photoUrl" class="mb-3">
-                <label class="form-label">Current Photo</label>
-                <div>
-                  <img
-                    :src="modelForm.photoUrl"
-                    class="img-thumbnail"
-                    style="max-width: 200px; max-height: 200px;"
-                    alt="Current photo"
-                  />
-                </div>
-              </div>
-
-              <div v-if="modelForm.videoUrl" class="mb-3">
-                <label class="form-label">Current Video</label>
-                <div>
-                  <video
-                    :src="modelForm.videoUrl"
-                    controls
-                    preload="metadata"
-                    crossorigin="anonymous"
-                    style="max-width: 300px; max-height: 300px; border-radius: 10px;"
-                  >
-                    Your browser does not support the video tag.
-                  </video>
-                </div>
-              </div>
-
-
-
-
-
-
-              <div class="d-flex justify-content-between">
-                <button type="button" class="btn" @click="resetForm" style="background-color: transparent; border: 2px solid #e0e0e0; color: #666666; font-weight: 600; border-radius: 8px; padding: 0.75rem 1.5rem; transition: all 0.2s ease;" @mouseover="e => { e.target.style.borderColor = '#00aff0'; e.target.style.color = '#00aff0'; }" @mouseout="e => { e.target.style.borderColor = '#e0e0e0'; e.target.style.color = '#666666'; }">
-                  <i class="fas fa-undo me-1"></i>
-                  Reset
-                </button>
-                <button type="submit" class="btn" :disabled="saving" :style="{ 'background-color': '#00aff0', 'border-color': '#00aff0', 'color': '#ffffff', 'font-weight': '600', 'border-radius': '8px', 'padding': '0.75rem 1.5rem', 'transition': 'all 0.2s ease', 'opacity': saving ? 0.5 : 1 }" @mouseover="e => { if(!saving) e.target.style.backgroundColor = '#0091ea'; }" @mouseout="e => { if(!saving) e.target.style.backgroundColor = '#00aff0'; }">
-                  <span v-if="saving" class="spinner-border spinner-border-sm me-1" style="width: 1rem; height: 1rem; border-width: 2px;"></span>
-                  <i v-else class="fas fa-save me-1"></i>
-                  {{ saving ? 'Saving...' : 'Save Model' }}
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Plans Management -->
-      <div class="col-lg-4">
-        <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
-          <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
-            <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
-              <i class="fas fa-crown me-2" style="color: #00aff0;"></i>
-              Subscription Plans
-            </h5>
-            <button
-              class="btn btn-sm"
-              @click="showAddPlanModal"
-              :disabled="plans.length >= 4"
-              :style="{ 'background-color': '#00aff0', 'border-color': '#00aff0', 'color': '#ffffff', 'font-weight': '600', 'border-radius': '8px', 'padding': '0.5rem 1rem', 'transition': 'all 0.2s ease', 'opacity': plans.length >= 4 ? 0.5 : 1 }"
-              @mouseover="e => { if(plans.length < 4) e.target.style.backgroundColor = '#0091ea'; }"
-              @mouseout="e => { if(plans.length < 4) e.target.style.backgroundColor = '#00aff0'; }"
-            >
-              <i class="fas fa-plus me-1"></i>
-              Add Plan
-            </button>
-          </div>
-          <div class="card-body" style="padding: 1.5rem;">
-            <div v-if="plans.length === 0" class="text-center text-muted py-3">
-              <i class="fas fa-crown fa-2x mb-2"></i>
-              <p class="mb-0">No plans created yet</p>
-              <small>Create up to 4 subscription plans</small>
-            </div>
-            
-            <div v-else>
-              <div
-                v-for="plan in plans"
-                :key="plan.id"
-                class="card mb-3"
+        <!-- Plans Management -->
+        <div class="col-lg-4">
+          <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+            <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
+              <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">
+                <i class="fas fa-crown me-2" style="color: #00aff0;"></i>
+                Subscription Plans
+              </h5>
+              <button
+                class="btn btn-sm"
+                @click="showAddPlanModal"
+                :disabled="plans.length >= 4"
+                :style="{ 'background-color': '#00aff0', 'border-color': '#00aff0', 'color': '#ffffff', 'font-weight': '600', 'border-radius': '8px', 'padding': '0.5rem 1rem', 'transition': 'all 0.2s ease', 'opacity': plans.length >= 4 ? 0.5 : 1 }"
+                @mouseover="e => { if(plans.length < 4) e.target.style.backgroundColor = '#0091ea'; }"
+                @mouseout="e => { if(plans.length < 4) e.target.style.backgroundColor = '#00aff0'; }"
               >
-                <div class="card-body">
-                  <div class="d-flex justify-content-between align-items-start mb-2">
-                    <h6 class="card-title mb-0">{{ plan.name }}</h6>
-                    <div>
-                      <button
-                        class="btn btn-sm"
-                        type="button"
-                        @click="startEditPlan(plan)"
-                        :title="planEditOpen[plan.id] ? 'Close' : 'Edit plan'"
-                        :style="planEditOpen[plan.id] ? { 'background-color': '#00aff0', 'border-color': '#00aff0', 'color': '#ffffff' } : { 'background-color': 'transparent', 'border': '2px solid #e0e0e0', 'color': '#666666' }"
-                        style="font-weight: 600; border-radius: 8px; padding: 0.5rem 0.75rem; transition: all 0.2s ease;"
-                        @mouseover="e => { if(!planEditOpen[plan.id]) { e.target.style.borderColor = '#00aff0'; e.target.style.color = '#00aff0'; } }"
-                        @mouseout="e => { if(!planEditOpen[plan.id]) { e.target.style.borderColor = '#e0e0e0'; e.target.style.color = '#666666'; } }"
-                      >
-                        <i :class="planEditOpen[plan.id] ? 'fas fa-times' : 'fas fa-ellipsis-v'"></i>
-                      </button>
-                    </div>
-                  </div>
-                  <p class="card-text small text-muted">{{ plan.description }}</p>
-                  <div class="d-flex justify-content-between align-items-center">
-                    <span class="fw-bold text-success">${{ plan.price }}</span>
-                    <small class="text-muted">{{ plan.duration }} days</small>
-                  </div>
-
-                  <!-- Inline plan edit -->
-                  <div v-if="planEditOpen && planEditOpen[plan.id]" class="mt-3 border rounded p-3 bg-light">
-                    <div class="row g-3">
-                      <div class="col-md-6">
-                        <label class="form-label">Plan Name</label>
-                        <input type="text" class="form-control" v-model="planEdit[plan.id].name" />
-                      </div>
-                      <div class="col-md-6">
-                        <label class="form-label">Price ($)</label>
-                        <input type="number" min="0" step="0.01" class="form-control" v-model="planEdit[plan.id].price" />
-                      </div>
-                      <div class="col-12">
-                        <label class="form-label">Description</label>
-                        <textarea class="form-control" rows="3" v-model="planEdit[plan.id].description"></textarea>
-                      </div>
-                      <div class="col-md-6">
-                        <label class="form-label">Duration (days)</label>
-                        <input type="number" min="1" class="form-control" v-model="planEdit[plan.id].duration" />
-                      </div>
-                      
-                    </div>
-                     <div class="mt-4 d-flex flex-wrap gap-2 align-items-center">
-                       <button class="btn btn-primary btn-sm action-btn no-padding" :disabled="savingPlan" @click="saveEditPlan(plan.id)">
-                         <span v-if="savingPlan" class="spinner-border spinner-border-sm me-1"></span>
-                         Save Changes
-                       </button>
-                       <button class="btn btn-outline-secondary btn-sm action-btn" @click="cancelEditPlan(plan.id)">Cancel</button>
-                       <button class="btn btn-danger btn-sm action-btn" @click="deletePlan(plan.id)" title="Delete plan">
-                         <i class="fas fa-trash" aria-hidden="true"></i>
-                       </button>
-                       <button class="btn btn-outline-info btn-sm action-btn" @click="togglePlanMedia(plan.id)" title="Manage media">
-                         <i class="fa fa-paperclip" aria-hidden="true" style="color: rgb(0, 175, 240);"></i>
-                       </button>
-                     </div>
-                  </div>
-
-                  <!-- Media management content -->
-                  <div v-if="planMediaExpanded && planMediaExpanded[plan.id]" class="mt-3 border rounded p-2 bg-light">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                      <strong>Plan Media</strong>
+                <i class="fas fa-plus me-1"></i>
+                Add Plan
+              </button>
+            </div>
+            <div class="card-body" style="padding: 1.5rem;">
+              <div v-if="plans.length === 0" class="text-center text-muted py-3">
+                <i class="fas fa-crown fa-2x mb-2"></i>
+                <p class="mb-0">No plans created yet</p>
+                <small>Create up to 4 subscription plans</small>
+              </div>
+              
+              <div v-else>
+                <div
+                  v-for="plan in plans"
+                  :key="plan.id"
+                  class="card mb-3"
+                >
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                      <h6 class="card-title mb-0">{{ plan.name }}</h6>
                       <div>
-                        <label class="btn btn-sm btn-secondary mb-0">
-                          <i class="fas fa-upload me-1"></i>
-                          Upload
-                          <input type="file" class="d-none" accept="image/*,video/*" multiple @change="(e) => uploadMoreMedia(plan.id, e)" />
-                        </label>
+                        <button
+                          class="btn btn-sm"
+                          type="button"
+                          @click="startEditPlan(plan)"
+                          :title="planEditOpen[plan.id] ? 'Close' : 'Edit plan'"
+                          :style="planEditOpen[plan.id] ? { 'background-color': '#00aff0', 'border-color': '#00aff0', 'color': '#ffffff' } : { 'background-color': 'transparent', 'border': '2px solid #e0e0e0', 'color': '#666666' }"
+                          style="font-weight: 600; border-radius: 8px; padding: 0.5rem 0.75rem; transition: all 0.2s ease;"
+                          @mouseover="e => { if(!planEditOpen[plan.id]) { e.target.style.borderColor = '#00aff0'; e.target.style.color = '#00aff0'; } }"
+                          @mouseout="e => { if(!planEditOpen[plan.id]) { e.target.style.borderColor = '#e0e0e0'; e.target.style.color = '#666666'; } }"
+                        >
+                          <i :class="planEditOpen[plan.id] ? 'fas fa-times' : 'fas fa-ellipsis-v'"></i>
+                        </button>
                       </div>
                     </div>
-
-                    <div v-if="planMediaLoading && planMediaLoading[plan.id]" class="text-center py-3 text-muted">
-                      <span class="spinner-border spinner-border-sm me-2"></span>Loading...
+                    <p class="card-text small text-muted">{{ plan.description }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                      <span class="fw-bold text-success">${{ plan.price }}</span>
+                      <small class="text-muted">{{ plan.duration }} days</small>
                     </div>
 
-                    <div v-else>
-                      <div v-if="!(planMedia && planMedia[plan.id]) || (planMedia[plan.id] || []).length === 0" class="text-center text-muted py-3">
-                        No media yet for this plan.
+                    <!-- Inline plan edit -->
+                    <div v-if="planEditOpen && planEditOpen[plan.id]" class="mt-3 border rounded p-3 bg-light">
+                      <div class="row g-3">
+                        <div class="col-md-6">
+                          <label class="form-label">Plan Name</label>
+                          <input type="text" class="form-control" v-model="planEdit[plan.id].name" />
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">Price ($)</label>
+                          <input type="number" min="0" step="0.01" class="form-control" v-model="planEdit[plan.id].price" />
+                        </div>
+                        <div class="col-12">
+                          <label class="form-label">Description</label>
+                          <textarea class="form-control" rows="3" v-model="planEdit[plan.id].description"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                          <label class="form-label">Duration (days)</label>
+                          <input type="number" min="1" class="form-control" v-model="planEdit[plan.id].duration" />
+                        </div>
+                        
                       </div>
-                      <div v-else class="row g-2">
-                        <div v-for="m in (planMedia && planMedia[plan.id] ? planMedia[plan.id] : [])" :key="m.id" class="col-6">
-                          <div class="position-relative border rounded p-1 bg-white">
-                            <template v-if="m.type === 'IMAGE'">
-                              <img :src="m.url" class="img-fluid rounded" alt="plan media" />
-                            </template>
-                            <template v-else>
-                              <video :src="m.url" controls preload="metadata" class="w-100 rounded"></video>
-                            </template>
-                            <button class="btn btn-sm btn-danger position-absolute" style="top: 6px; right: 6px" @click="deleteMediaItem(m.id, plan.id)">
-                              <i class="fas fa-trash"></i>
-                            </button>
+                       <div class="mt-4 d-flex flex-wrap gap-2 align-items-center">
+                         <button class="btn btn-primary btn-sm action-btn no-padding" :disabled="savingPlan" @click="saveEditPlan(plan.id)">
+                           <span v-if="savingPlan" class="spinner-border spinner-border-sm me-1"></span>
+                           Save Changes
+                         </button>
+                         <button class="btn btn-outline-secondary btn-sm action-btn" @click="cancelEditPlan(plan.id)">Cancel</button>
+                         <button class="btn btn-danger btn-sm action-btn" @click="deletePlan(plan.id)" title="Delete plan">
+                           <i class="fas fa-trash" aria-hidden="true"></i>
+                         </button>
+                         <button class="btn btn-outline-info btn-sm action-btn" @click="togglePlanMedia(plan.id)" title="Manage media">
+                           <i class="fa fa-paperclip" aria-hidden="true" style="color: rgb(0, 175, 240);"></i>
+                         </button>
+                       </div>
+                    </div>
+
+                    <!-- Media management content -->
+                    <div v-if="planMediaExpanded && planMediaExpanded[plan.id]" class="mt-3 border rounded p-2 bg-light">
+                      <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>Plan Media</strong>
+                        <div>
+                          <label class="btn btn-sm btn-secondary mb-0">
+                            <i class="fas fa-upload me-1"></i>
+                            Upload
+                            <input type="file" class="d-none" accept="image/*,video/*" multiple @change="(e) => uploadMoreMedia(plan.id, e)" />
+                          </label>
+                        </div>
+                      </div>
+
+                      <div v-if="planMediaLoading && planMediaLoading[plan.id]" class="text-center py-3 text-muted">
+                        <span class="spinner-border spinner-border-sm me-2"></span>Loading...
+                      </div>
+
+                      <div v-else>
+                        <div v-if="!(planMedia && planMedia[plan.id]) || (planMedia[plan.id] || []).length === 0" class="text-center text-muted py-3">
+                          No media yet for this plan.
+                        </div>
+                        <div v-else class="row g-2">
+                          <div v-for="m in (planMedia && planMedia[plan.id] ? planMedia[plan.id] : [])" :key="m.id" class="col-6">
+                            <div class="position-relative border rounded p-1 bg-white">
+                              <template v-if="m.type === 'IMAGE'">
+                                <img :src="m.url" class="img-fluid rounded" alt="plan media" />
+                              </template>
+                              <template v-else>
+                                <video :src="m.url" controls preload="metadata" class="w-100 rounded"></video>
+                              </template>
+                              <button class="btn btn-sm btn-danger position-absolute" style="top: 6px; right: 6px" @click="deleteMediaItem(m.id, plan.id)">
+                                <i class="fas fa-trash"></i>
+                              </button>
+                            </div>
                           </div>
                         </div>
                       </div>

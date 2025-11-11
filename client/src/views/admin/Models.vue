@@ -10,101 +10,99 @@
           <p style="color: #666666; font-size: 1rem; margin-bottom: 2rem;">Manage models and their visibility</p>
         </div>
       </div>
-    </div>
 
-    <!-- Models Table -->
-    <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
-      <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
-        <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">All Models ({{ models.length }})</h5>
-        <button class="btn btn-sm" @click="refreshModels" style="background-color: #00aff0; border-color: #00aff0; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.5rem 1rem; transition: all 0.2s ease;" @mouseover="e => e.target.style.backgroundColor = '#0091ea'" @mouseout="e => e.target.style.backgroundColor = '#00aff0'">
-          <i class="fas fa-sync-alt me-1"></i>
-          Refresh
-        </button>
-      </div>
-      <div class="card-body p-0">
-        <div v-if="loading" class="text-center py-5">
-          <div class="spinner-border" role="status">
-            <span class="visually-hidden">Loading...</span>
+      <!-- Models Table -->
+      <div class="card" style="border: none; border-radius: 12px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04); margin-bottom: 1.5rem;">
+        <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #ffffff; border-bottom: 1px solid #e0e0e0; padding: 1.25rem 1.5rem; border-radius: 12px 12px 0 0;">
+          <h5 class="mb-0" style="color: #1a1a1a; font-weight: 700;">All Models ({{ models.length }})</h5>
+          <button class="btn btn-sm" @click="refreshModels" style="background-color: #00aff0; border-color: #00aff0; color: #ffffff; font-weight: 600; border-radius: 8px; padding: 0.5rem 1rem; transition: all 0.2s ease;" @mouseover="e => e.target.style.backgroundColor = '#0091ea'" @mouseout="e => e.target.style.backgroundColor = '#00aff0'">
+            <i class="fas fa-sync-alt me-1"></i>
+            Refresh
+          </button>
+        </div>
+        <div class="card-body p-0">
+          <div v-if="loading" class="text-center py-5">
+            <div class="spinner-border" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
           </div>
-        </div>
-        
-        <div v-else-if="models.length === 0" class="text-center py-5">
-          <i class="fas fa-star fa-3x text-muted mb-3"></i>
-          <h4 class="text-muted">No models found</h4>
-        </div>
-        
-        <div v-else class="table-responsive">
-          <table class="table table-hover mb-0">
-            <thead class="table-light">
-              <tr>
-                <th>Model</th>
-                <th>Manager</th>
-                <th>Status</th>
-                <th>Plans</th>
-                <th>Subscribers</th>
-                <th>Created</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="model in models" :key="model.id">
-                <td>
-                  <div class="d-flex align-items-center">
-                    <img
-                      :src="model.photoUrl || 'https://via.placeholder.com/40x40'"
-                      class="avatar me-3"
-                      :alt="`${model.name} ${model.surname}`"
-                      style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%;"
-                    />
-                    <div>
-                      <div class="fw-bold">{{ model.name }} {{ model.surname }}</div>
-                      <small class="text-muted">{{ model.age }} years old</small>
+          <div v-else-if="models.length === 0" class="text-center py-5">
+            <i class="fas fa-star fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">No models found</h4>
+          </div>
+          <div v-else class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>Model</th>
+                  <th>Manager</th>
+                  <th>Status</th>
+                  <th>Plans</th>
+                  <th>Subscribers</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="model in models" :key="model.id">
+                  <td>
+                    <div class="d-flex align-items-center">
+                      <img
+                        :src="model.photoUrl || 'https://via.placeholder.com/40x40'"
+                        class="avatar me-3"
+                        :alt="`${model.name} ${model.surname}`"
+                        style="width: 40px; height: 40px; object-fit: cover; border-radius: 50%;"
+                      />
+                      <div>
+                        <div class="fw-bold">{{ model.name }} {{ model.surname }}</div>
+                        <small class="text-muted">{{ model.age }} years old</small>
+                      </div>
                     </div>
-                  </div>
-                </td>
-                <td>
-                  <div>
-                    <div class="fw-bold">{{ model.manager.user.email }}</div>
-                    <span class="badge" :class="model.manager.user.isActive ? 'bg-success' : 'bg-danger'">
-                      {{ model.manager.user.isActive ? 'Active' : 'Blocked' }}
+                  </td>
+                  <td>
+                    <div>
+                      <div class="fw-bold">{{ model.manager.user.email }}</div>
+                      <span class="badge" :class="model.manager.user.isActive ? 'bg-success' : 'bg-danger'">
+                        {{ model.manager.user.isActive ? 'Active' : 'Blocked' }}
+                      </span>
+                    </div>
+                  </td>
+                  <td>
+                    <span class="badge" :class="model.isActive ? 'bg-success' : 'bg-danger'">
+                      {{ model.isActive ? 'Active' : 'Blocked' }}
                     </span>
-                  </div>
-                </td>
-                <td>
-                  <span class="badge" :class="model.isActive ? 'bg-success' : 'bg-danger'">
-                    {{ model.isActive ? 'Active' : 'Blocked' }}
-                  </span>
-                </td>
-                <td>
-                  <span class="badge bg-info">{{ model.plans.length }} plans</span>
-                </td>
-                <td>
-                  <span class="badge bg-primary">{{ model._count.subscriptions }} subscribers</span>
-                </td>
-                <td>{{ formatDate(model.createdAt) }}</td>
-                <td>
-                  <div class="btn-group btn-group-sm">
-                    <button
-                      class="btn"
-                      :class="model.isActive ? 'btn-outline-danger' : 'btn-outline-success'"
-                      @click="toggleModelStatus(model)"
-                      :disabled="processingModel === model.id"
-                    >
-                      <span v-if="processingModel === model.id" class="spinner-border spinner-border-sm me-1"></span>
-                      <i :class="model.isActive ? 'fas fa-ban' : 'fas fa-check'" class="me-1"></i>
-                      {{ model.isActive ? 'Block' : 'Unblock' }}
-                    </button>
-                    <button
-                      class="btn btn-outline-info"
-                      @click="viewModelDetails(model)"
-                    >
-                      <i class="fas fa-eye"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                  </td>
+                  <td>
+                    <span class="badge bg-info">{{ model.plans.length }} plans</span>
+                  </td>
+                  <td>
+                    <span class="badge bg-primary">{{ model._count.subscriptions }} subscribers</span>
+                  </td>
+                  <td>{{ formatDate(model.createdAt) }}</td>
+                  <td>
+                    <div class="btn-group btn-group-sm">
+                      <button
+                        class="btn"
+                        :class="model.isActive ? 'btn-outline-danger' : 'btn-outline-success'"
+                        @click="toggleModelStatus(model)"
+                        :disabled="processingModel === model.id"
+                      >
+                        <span v-if="processingModel === model.id" class="spinner-border spinner-border-sm me-1"></span>
+                        <i :class="model.isActive ? 'fas fa-ban' : 'fas fa-check'" class="me-1"></i>
+                        {{ model.isActive ? 'Block' : 'Unblock' }}
+                      </button>
+                      <button
+                        class="btn btn-outline-info"
+                        @click="viewModelDetails(model)"
+                      >
+                        <i class="fas fa-eye"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     </div>

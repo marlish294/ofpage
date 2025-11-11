@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const prisma = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const { emitAdminEvent } = require('../utils/adminEvents');
 
 const router = express.Router();
 
@@ -60,6 +61,15 @@ router.post('/register', [
                 }
             });
         }
+
+        emitAdminEvent({
+            type: 'user.registered',
+            title: role === 'MANAGER' ? 'New manager registration' : 'New user registration',
+            description: `${email} joined as ${role === 'MANAGER' ? 'manager' : 'fan'}.`,
+            icon: role === 'MANAGER' ? 'fas fa-user-tie' : 'fas fa-user-plus',
+            color: role === 'MANAGER' ? '#6f42c1' : '#00aff0',
+            data: { userId: user.id, email, role }
+        });
 
         res.status(201).json({
             message: role === 'MANAGER'

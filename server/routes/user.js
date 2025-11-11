@@ -379,6 +379,7 @@ const { authenticateToken, requireRole } = require('../middleware/auth');
 const { uploadFile } = require('../config/minio');
 const { formatMessages, formatMessage } = require('../utils/messageFormatter');
 const { buildSubscriptionEntry, buildUnlockEntry, emitRevenueUpdate } = require('../utils/revenue');
+const { emitAdminEvent } = require('../utils/adminEvents');
 
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -582,19 +583,25 @@ router.post('/subscribe', async (req, res) => {
             }
         });
         // ✅ Automatically create private chat for user ↔ model (single per user-model)
-        const ensuredChat = await prisma.chat.upsert({
+        let chatCreated = false;
+        let ensuredChat = await prisma.chat.findUnique({
             where: {
                 userId_modelId: {
                     userId: req.user.id,
                     modelId: modelId
                 }
-            },
-            update: {},
-            create: {
-                userId: req.user.id,
-                modelId: modelId
             }
         });
+
+        if (!ensuredChat) {
+            ensuredChat = await prisma.chat.create({
+                data: {
+                    userId: req.user.id,
+                    modelId: modelId
+                }
+            });
+            chatCreated = true;
+        }
 
         // Cleanup: if any duplicate chats exist due to historical data, remove them now
         try {
@@ -613,6 +620,41 @@ router.post('/subscribe', async (req, res) => {
         const revenueEntry = buildSubscriptionEntry(subscription);
         if (revenueEntry) {
             emitRevenueUpdate(revenueEntry);
+        }
+
+        emitAdminEvent({
+            type: 'subscription.created',
+            title: 'New subscription created',
+            description: `${subscription.user.email} subscribed to ${subscription.plan?.name ? `${subscription.plan.name} plan` : 'a plan'} for ${subscription.model.name}.`,
+            icon: 'fas fa-credit-card',
+            color: '#00c78b',
+            data: {
+                subscriptionId: subscription.id,
+                userId: subscription.user.id,
+                userEmail: subscription.user.email,
+                modelId: subscription.modelId,
+                modelName: subscription.model.name,
+                planId: subscription.planId,
+                planName: subscription.plan?.name || null,
+                amount: subscription.amountPaid
+            }
+        });
+
+        if (chatCreated) {
+            emitAdminEvent({
+                type: 'chat.started',
+                title: 'New chat started',
+                description: `${subscription.user.email} opened a chat with ${subscription.model.name}${subscription.plan?.name ? ` (${subscription.plan.name} plan)` : ''}.`,
+                icon: 'fas fa-comments',
+                color: '#00aff0',
+                data: {
+                    chatId: ensuredChat.id,
+                    userId: subscription.user.id,
+                    userEmail: subscription.user.email,
+                    modelId: subscription.modelId,
+                    modelName: subscription.model.name
+                }
+            });
         }
 
         res.status(201).json({
@@ -831,10 +873,12 @@ router.post('/messages', upload.single('media'), async (req, res) => {
             where: { userId: req.user.id, modelId }
         });
 
+        let chatCreated = false;
         if (!chat) {
             chat = await prisma.chat.create({
                 data: { userId: req.user.id, modelId }
             });
+            chatCreated = true;
         }
 
         let uploadResult = null;
@@ -904,6 +948,47 @@ router.post('/messages', upload.single('media'), async (req, res) => {
         const io = req.app.get('io');
         const formattedMessage = formatMessage(message, { currentUserId: req.user.id });
         if (io) io.to(`chat_${chat.id}`).emit('new_message', formattedMessage);
+
+        if (chatCreated) {
+            emitAdminEvent({
+                type: 'chat.started',
+                title: 'New chat started',
+                description: `${req.user.email} started a chat with ${targetModel.name}.`,
+                icon: 'fas fa-comments',
+                color: '#00aff0',
+                data: {
+                    chatId: chat.id,
+                    userId: req.user.id,
+                    userEmail: req.user.email,
+                    modelId,
+                    modelName: targetModel.name
+                },
+                timestamp: Date.now()
+            });
+        }
+
+        if (mediaFile) {
+            const mediaType = mediaFile.mimetype.startsWith('video/') ? 'video' : 'photo';
+            emitAdminEvent({
+                type: 'chat.media_uploaded',
+                title: 'Chat media uploaded',
+                description: `${req.user.email} sent a ${mediaType} to ${targetModel.name}.`,
+                icon: mediaType === 'video' ? 'fas fa-video' : 'fas fa-image',
+                color: '#6f42c1',
+                data: {
+                    chatId: chat.id,
+                    messageId: message.id,
+                    userId: req.user.id,
+                    userEmail: req.user.email,
+                    modelId,
+                    modelName: targetModel.name,
+                    mediaType,
+                    locked: false,
+                    lockPrice: 0
+                },
+                timestamp: Date.now()
+            });
+        }
 
         res.json({ message: formattedMessage });
     } catch (error) {
@@ -1060,6 +1145,24 @@ router.post('/media/:mediaId/unlock', async (req, res) => {
         if (unlockEntry) {
             emitRevenueUpdate(unlockEntry);
         }
+
+        emitAdminEvent({
+            type: 'media.unlocked',
+            title: 'Media unlocked',
+            description: `${req.user.email} unlocked premium media from ${unlockRecord.media.message.model.name}.`,
+            icon: 'fas fa-unlock',
+            color: '#ff9f43',
+            data: {
+                unlockId: unlockRecord.id,
+                mediaId: unlockRecord.mediaId,
+                amount: lockPrice,
+                userId: req.user.id,
+                userEmail: req.user.email,
+                modelId: unlockRecord.media.message.model.id,
+                modelName: unlockRecord.media.message.model.name
+            },
+            timestamp: Date.now()
+        });
 
         res.json({
             message: formattedMessageForUser,
