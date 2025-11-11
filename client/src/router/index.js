@@ -289,6 +289,7 @@ import ModelDetail from '../views/social/ModelDetail.vue'
 import Models from '../views/social/Models.vue'
 import Values from '../views/social/Values.vue'
 import Safety from '../views/social/Safety.vue'
+import InfoPage from '../views/social/InfoPage.vue'
 import Login from '../views/auth/Login.vue'
 import Register from '../views/auth/Register.vue'
 
@@ -317,6 +318,7 @@ const routes = [
     { path: '/model/:id', name: 'ModelDetail', component: ModelDetail, props: true },
     { path: '/values', name: 'Values', component: Values },
     { path: '/safety', name: 'Safety', component: Safety },
+    { path: '/info/:slug', name: 'InfoPage', component: InfoPage, props: true },
     { path: '/login', name: 'Login', component: Login },
     { path: '/register', name: 'Register', component: Register },
 

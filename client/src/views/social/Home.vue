@@ -440,10 +440,10 @@
               <div class="col-6 col-md-3 mb-4">
                 <h4 style="color: #1a1a1a; font-size: 0.875rem; font-weight: 700; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.5px;">Platform</h4>
                 <ul style="list-style: none; padding: 0; margin: 0;">
-                  <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #666666; text-decoration: none; font-size: 0.9375rem; transition: color 0.2s ease;" onmouseover="this.style.color='#00aff0'" onmouseout="this.style.color='#666666'">Discover Creators</a></li>
-                  <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #666666; text-decoration: none; font-size: 0.9375rem; transition: color 0.2s ease;" onmouseover="this.style.color='#00aff0'" onmouseout="this.style.color='#666666'">Explore Categories</a></li>
-                  <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #666666; text-decoration: none; font-size: 0.9375rem; transition: color 0.2s ease;" onmouseover="this.style.color='#00aff0'" onmouseout="this.style.color='#666666'">Pricing</a></li>
-                  <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #666666; text-decoration: none; font-size: 0.9375rem; transition: color 0.2s ease;" onmouseover="this.style.color='#00aff0'" onmouseout="this.style.color='#666666'">Support</a></li>
+                  <li style="margin-bottom: 0.5rem;"><router-link class="footer-link" :to="{ name: 'InfoPage', params: { slug: 'discover-creators' } }">Discover Creators</router-link></li>
+                  <li style="margin-bottom: 0.5rem;"><router-link class="footer-link" :to="{ name: 'InfoPage', params: { slug: 'explore-categories' } }">Explore Categories</router-link></li>
+                  <li style="margin-bottom: 0.5rem;"><router-link class="footer-link" :to="{ name: 'InfoPage', params: { slug: 'pricing' } }">Pricing</router-link></li>
+                  <li style="margin-bottom: 0.5rem;"><router-link class="footer-link" :to="{ name: 'InfoPage', params: { slug: 'support' } }">Support</router-link></li>
                 </ul>
               </div>
 
@@ -451,10 +451,10 @@
               <div class="col-6 col-md-3 mb-4">
                 <h4 style="color: #1a1a1a; font-size: 0.875rem; font-weight: 700; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.5px;">Company</h4>
                 <ul style="list-style: none; padding: 0; margin: 0;">
-                  <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #666666; text-decoration: none; font-size: 0.9375rem; transition: color 0.2s ease;" onmouseover="this.style.color='#00aff0'" onmouseout="this.style.color='#666666'">About</a></li>
-                  <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #666666; text-decoration: none; font-size: 0.9375rem; transition: color 0.2s ease;" onmouseover="this.style.color='#00aff0'" onmouseout="this.style.color='#666666'">Blog</a></li>
-                  <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #666666; text-decoration: none; font-size: 0.9375rem; transition: color 0.2s ease;" onmouseover="this.style.color='#00aff0'" onmouseout="this.style.color='#666666'">Careers</a></li>
-                  <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #666666; text-decoration: none; font-size: 0.9375rem; transition: color 0.2s ease;" onmouseover="this.style.color='#00aff0'" onmouseout="this.style.color='#666666'">Press</a></li>
+                  <li style="margin-bottom: 0.5rem;"><router-link class="footer-link" :to="{ name: 'InfoPage', params: { slug: 'about' } }">About</router-link></li>
+                  <li style="margin-bottom: 0.5rem;"><router-link class="footer-link" :to="{ name: 'InfoPage', params: { slug: 'blog' } }">Blog</router-link></li>
+                  <li style="margin-bottom: 0.5rem;"><router-link class="footer-link" :to="{ name: 'InfoPage', params: { slug: 'careers' } }">Careers</router-link></li>
+                  <li style="margin-bottom: 0.5rem;"><router-link class="footer-link" :to="{ name: 'InfoPage', params: { slug: 'press' } }">Press</router-link></li>
                 </ul>
               </div>
 
@@ -462,10 +462,10 @@
               <div class="col-6 col-md-3 mb-4">
                 <h4 style="color: #1a1a1a; font-size: 0.875rem; font-weight: 700; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.5px;">Safety</h4>
                 <ul style="list-style: none; padding: 0; margin: 0;">
-                  <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #666666; text-decoration: none; font-size: 0.9375rem; transition: color 0.2s ease;" onmouseover="this.style.color='#00aff0'" onmouseout="this.style.color='#666666'">Safety Center</a></li>
-                  <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #666666; text-decoration: none; font-size: 0.9375rem; transition: color 0.2s ease;" onmouseover="this.style.color='#00aff0'" onmouseout="this.style.color='#666666'">Trust & Transparency</a></li>
-                  <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #666666; text-decoration: none; font-size: 0.9375rem; transition: color 0.2s ease;" onmouseover="this.style.color='#00aff0'" onmouseout="this.style.color='#666666'">Content Guidelines</a></li>
-                  <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #666666; text-decoration: none; font-size: 0.9375rem; transition: color 0.2s ease;" onmouseover="this.style.color='#00aff0'" onmouseout="this.style.color='#666666'">Report Issue</a></li>
+                  <li style="margin-bottom: 0.5rem;"><router-link class="footer-link" :to="{ name: 'InfoPage', params: { slug: 'safety-center' } }">Safety Center</router-link></li>
+                  <li style="margin-bottom: 0.5rem;"><router-link class="footer-link" :to="{ name: 'InfoPage', params: { slug: 'trust-transparency' } }">Trust & Transparency</router-link></li>
+                  <li style="margin-bottom: 0.5rem;"><router-link class="footer-link" :to="{ name: 'InfoPage', params: { slug: 'content-guidelines' } }">Content Guidelines</router-link></li>
+                  <li style="margin-bottom: 0.5rem;"><router-link class="footer-link" :to="{ name: 'InfoPage', params: { slug: 'report-issue' } }">Report Issue</router-link></li>
                 </ul>
               </div>
 
@@ -473,10 +473,10 @@
               <div class="col-6 col-md-3 mb-4">
                 <h4 style="color: #1a1a1a; font-size: 0.875rem; font-weight: 700; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.5px;">Legal</h4>
                 <ul style="list-style: none; padding: 0; margin: 0;">
-                  <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #666666; text-decoration: none; font-size: 0.9375rem; transition: color 0.2s ease;" onmouseover="this.style.color='#00aff0'" onmouseout="this.style.color='#666666'">Terms of Service</a></li>
-                  <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #666666; text-decoration: none; font-size: 0.9375rem; transition: color 0.2s ease;" onmouseover="this.style.color='#00aff0'" onmouseout="this.style.color='#666666'">Privacy Policy</a></li>
-                  <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #666666; text-decoration: none; font-size: 0.9375rem; transition: color 0.2s ease;" onmouseover="this.style.color='#00aff0'" onmouseout="this.style.color='#666666'">DMCA & Copyright</a></li>
-                  <li style="margin-bottom: 0.5rem;"><a href="#" style="color: #666666; text-decoration: none; font-size: 0.9375rem; transition: color 0.2s ease;" onmouseover="this.style.color='#00aff0'" onmouseout="this.style.color='#666666'">Cookies Settings</a></li>
+                  <li style="margin-bottom: 0.5rem;"><router-link class="footer-link" :to="{ name: 'InfoPage', params: { slug: 'terms-of-service' } }">Terms of Service</router-link></li>
+                  <li style="margin-bottom: 0.5rem;"><router-link class="footer-link" :to="{ name: 'InfoPage', params: { slug: 'privacy-policy' } }">Privacy Policy</router-link></li>
+                  <li style="margin-bottom: 0.5rem;"><router-link class="footer-link" :to="{ name: 'InfoPage', params: { slug: 'dmca-copyright' } }">DMCA & Copyright</router-link></li>
+                  <li style="margin-bottom: 0.5rem;"><router-link class="footer-link" :to="{ name: 'InfoPage', params: { slug: 'cookies-settings' } }">Cookies Settings</router-link></li>
                 </ul>
               </div>
             </div>
@@ -878,6 +878,17 @@ export default {
   line-height: 1.6;
   margin: 0;
   max-width: 100%;
+}
+
+.footer-link {
+  color: #666666;
+  text-decoration: none;
+  font-size: 0.9375rem;
+  transition: color 0.2s ease;
+}
+
+.footer-link:hover {
+  color: #00aff0 !important;
 }
 
 @media (max-width: 992px) {
