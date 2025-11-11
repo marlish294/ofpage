@@ -6,12 +6,23 @@ const { uploadFile } = require('../config/minio');
 const { formatMessages, formatMessage } = require('../utils/messageFormatter');
 const { buildSubscriptionEntry, buildUnlockEntry } = require('../utils/revenue');
 const { emitAdminEvent } = require('../utils/adminEvents');
+const { getManagerEvents } = require('../utils/managerEvents');
 
 const router = express.Router();
 
 // All routes require manager authentication
 router.use(authenticateToken);
 router.use(requireManager);
+
+router.get('/activity-events', (req, res) => {
+    try {
+        const events = getManagerEvents(req.user.id);
+        res.json({ events });
+    } catch (error) {
+        console.error('Get manager activity events error:', error);
+        res.status(500).json({ message: 'Failed to fetch activity events' });
+    }
+});
 
 // Configure multer for file uploads
 // const upload = multer({

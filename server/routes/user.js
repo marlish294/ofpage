@@ -380,6 +380,7 @@ const { uploadFile } = require('../config/minio');
 const { formatMessages, formatMessage } = require('../utils/messageFormatter');
 const { buildSubscriptionEntry, buildUnlockEntry, emitRevenueUpdate } = require('../utils/revenue');
 const { emitAdminEvent } = require('../utils/adminEvents');
+const { emitManagerEvent } = require('../utils/managerEvents');
 
 const upload = multer({
     storage: multer.memoryStorage(),
@@ -562,7 +563,19 @@ router.post('/subscribe', async (req, res) => {
                         hairColor: true,
                         skinColor: true,
                         photoUrl: true,
-                        videoUrl: true
+                        videoUrl: true,
+                        manager: {
+                            select: {
+                                id: true,
+                                userId: true,
+                                user: {
+                                    select: {
+                                        id: true,
+                                        email: true
+                                    }
+                                }
+                            }
+                        }
                     }
                 },
                 plan: {
@@ -640,6 +653,27 @@ router.post('/subscribe', async (req, res) => {
             }
         });
 
+        const managerUserId = subscription.model.manager?.userId || subscription.model.manager?.user?.id || null;
+        if (managerUserId) {
+            emitManagerEvent(managerUserId, {
+                type: 'subscription.created',
+                title: 'New subscriber joined',
+                description: `${subscription.user.email} subscribed to ${subscription.plan?.name ? `${subscription.plan.name}` : 'a plan'} for ${subscription.model.name}.`,
+                icon: 'fas fa-user-plus',
+                color: '#00c78b',
+                data: {
+                    subscriptionId: subscription.id,
+                    userId: subscription.user.id,
+                    userEmail: subscription.user.email,
+                    modelId: subscription.modelId,
+                    modelName: subscription.model.name,
+                    planId: subscription.planId,
+                    planName: subscription.plan?.name || null,
+                    amount: subscription.amountPaid
+                }
+            });
+        }
+
         if (chatCreated) {
             emitAdminEvent({
                 type: 'chat.started',
@@ -655,6 +689,23 @@ router.post('/subscribe', async (req, res) => {
                     modelName: subscription.model.name
                 }
             });
+
+            if (managerUserId) {
+                emitManagerEvent(managerUserId, {
+                    type: 'chat.started',
+                    title: 'New chat opened',
+                    description: `${subscription.user.email} opened a chat with you${subscription.plan?.name ? ` (${subscription.plan.name})` : ''}.`,
+                    icon: 'fas fa-comments',
+                    color: '#00aff0',
+                    data: {
+                        chatId: ensuredChat.id,
+                        userId: subscription.user.id,
+                        userEmail: subscription.user.email,
+                        modelId: subscription.modelId,
+                        modelName: subscription.model.name
+                    }
+                });
+            }
         }
 
         res.status(201).json({
@@ -965,6 +1016,24 @@ router.post('/messages', upload.single('media'), async (req, res) => {
                 },
                 timestamp: Date.now()
             });
+
+            if (managerUserId) {
+                emitManagerEvent(managerUserId, {
+                    type: 'chat.started',
+                    title: 'New chat opened',
+                    description: `${req.user.email} started a chat with you.`,
+                    icon: 'fas fa-comments',
+                    color: '#00aff0',
+                    data: {
+                        chatId: chat.id,
+                        userId: req.user.id,
+                        userEmail: req.user.email,
+                        modelId,
+                        modelName: targetModel.name
+                    },
+                    timestamp: Date.now()
+                });
+            }
         }
 
         if (mediaFile) {
@@ -1098,7 +1167,10 @@ router.post('/media/:mediaId/unlock', async (req, res) => {
                     }
                 },
                 media: {
-                    include: {
+                    select: {
+                        id: true,
+                        type: true,
+                        lockPrice: true,
                         message: {
                             select: {
                                 id: true,
@@ -1107,7 +1179,18 @@ router.post('/media/:mediaId/unlock', async (req, res) => {
                                     select: {
                                         id: true,
                                         name: true,
-                                        surname: true
+                                        surname: true,
+                                        manager: {
+                                            select: {
+                                                userId: true,
+                                                user: {
+                                                    select: {
+                                                        id: true,
+                                                        email: true
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -1146,10 +1229,12 @@ router.post('/media/:mediaId/unlock', async (req, res) => {
             emitRevenueUpdate(unlockEntry);
         }
 
+        const unlockedMediaType = (unlockRecord.media?.type || '').toUpperCase() === 'VIDEO' ? 'video' : 'photo';
+
         emitAdminEvent({
             type: 'media.unlocked',
             title: 'Media unlocked',
-            description: `${req.user.email} unlocked premium media from ${unlockRecord.media.message.model.name}.`,
+            description: `${req.user.email} unlocked a ${unlockedMediaType} from ${unlockRecord.media.message.model.name}.`,
             icon: 'fas fa-unlock',
             color: '#ff9f43',
             data: {
@@ -1159,10 +1244,33 @@ router.post('/media/:mediaId/unlock', async (req, res) => {
                 userId: req.user.id,
                 userEmail: req.user.email,
                 modelId: unlockRecord.media.message.model.id,
-                modelName: unlockRecord.media.message.model.name
+                modelName: unlockRecord.media.message.model.name,
+                mediaType: unlockedMediaType
             },
             timestamp: Date.now()
         });
+
+        const managerUserIdForUnlock = unlockRecord.media.message.model.manager?.userId || unlockRecord.media.message.model.manager?.user?.id;
+        if (managerUserIdForUnlock) {
+            emitManagerEvent(managerUserIdForUnlock, {
+                type: 'media.unlocked',
+                title: 'Paid media unlocked',
+                description: `${req.user.email} unlocked a ${unlockedMediaType}.`,
+                icon: 'fas fa-unlock',
+                color: '#ff9f43',
+                data: {
+                    unlockId: unlockRecord.id,
+                    mediaId: unlockRecord.mediaId,
+                    amount: lockPrice,
+                    userId: req.user.id,
+                    userEmail: req.user.email,
+                    modelId: unlockRecord.media.message.model.id,
+                    modelName: unlockRecord.media.message.model.name,
+                    mediaType: unlockedMediaType
+                },
+                timestamp: Date.now()
+            });
+        }
 
         res.json({
             message: formattedMessageForUser,

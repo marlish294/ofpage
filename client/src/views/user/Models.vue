@@ -81,13 +81,15 @@
               </div>
               <div v-else class="row g-2">
                 <div class="col-6 col-md-4 col-lg-3" v-for="m in modelMedia[model.id]" :key="m.id">
-                  <div class="border rounded p-1 bg-white h-100">
-                    <template v-if="m.type === 'IMAGE'">
-                      <img :src="m.url" class="img-fluid rounded" alt="media" />
-                    </template>
-                    <template v-else>
-                      <video :src="m.url" controls preload="metadata" class="w-100 rounded"></video>
-                    </template>
+                  <div class="media-card">
+                    <div class="media-thumb">
+                      <template v-if="m.type === 'IMAGE'">
+                        <img :src="m.url" alt="media" />
+                      </template>
+                      <template v-else>
+                        <video :src="m.url" controls preload="metadata" class="media-video-controls"></video>
+                      </template>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -242,6 +244,48 @@ export default {
   color: rgb(0, 175, 240);
   font-size: 1rem;
   margin-right: 0.35rem;
+}
+
+.media-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+.media-thumb {
+  position: relative;
+  width: 100%;
+  padding-top: 133.333%;
+  background-color: #f8fafc;
+}
+
+.media-thumb img,
+.media-thumb video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.media-video-controls {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.media-meta {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  color: #475569;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
 }
 </style>
 

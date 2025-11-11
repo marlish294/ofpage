@@ -28,7 +28,11 @@
 
       <div
         class="navbar-collapse"
-        :class="{ show: navOpen, collapsing: isCollapsing, collapse: true }"
+        :class="{
+          show: navOpen && !isCollapsing,
+          collapsing: isCollapsing,
+          collapse: !isCollapsing
+        }"
         id="navbarNav"
         ref="navbarNav"
         :style="collapseStyle"
@@ -186,7 +190,8 @@ export default {
       dropdownOpen: false,
       navOpen: false,
       isCollapsing: false,
-      collapseHeight: null
+      collapseHeight: null,
+      collapseTimeout: null
     }
   },
   computed: {
@@ -254,6 +259,10 @@ export default {
   beforeUnmount() {
     // Remove click outside handler
     document.removeEventListener('click', this.handleClickOutside)
+    if (this.collapseTimeout) {
+      clearTimeout(this.collapseTimeout)
+      this.collapseTimeout = null
+    }
   },
   
   updated() {
@@ -299,6 +308,14 @@ export default {
           this.navOpen = true
         })
       }
+
+      clearTimeout(this.collapseTimeout)
+      this.collapseTimeout = setTimeout(() => {
+        if (this.isCollapsing) {
+          this.isCollapsing = false
+          this.collapseHeight = null
+        }
+      }, 320)
     },
 
     handleTransitionEnd(event) {
@@ -306,6 +323,10 @@ export default {
       if (!this.isCollapsing) return
       this.isCollapsing = false
       this.collapseHeight = null
+      if (this.collapseTimeout) {
+        clearTimeout(this.collapseTimeout)
+        this.collapseTimeout = null
+      }
     },
 
     closeMobileNav() {
@@ -322,6 +343,14 @@ export default {
           this.collapseHeight = 0
         })
       })
+
+      clearTimeout(this.collapseTimeout)
+      this.collapseTimeout = setTimeout(() => {
+        if (this.isCollapsing) {
+          this.isCollapsing = false
+          this.collapseHeight = null
+        }
+      }, 320)
     },
 
     initializeDropdowns() {
@@ -692,6 +721,21 @@ export default {
 .nav-link {
   color: #00aff0 !important;
   transition: color 0.2s ease;
+}
+
+.navbar-collapse {
+  transition: height 0.28s ease;
+}
+
+@media (min-width: 992px) {
+  .navbar-collapse {
+    transition: none;
+    height: auto !important;
+  }
+}
+
+.navbar-collapse.collapsing {
+  pointer-events: none;
 }
 
 .nav-link:hover,
